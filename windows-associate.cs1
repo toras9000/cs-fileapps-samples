@@ -1,0 +1,50 @@
+#:package Lestaly.General@0.102.0
+#:package Kokuban@0.2.0
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using Microsoft.Win32;
+using Kokuban;
+using Lestaly;
+
+var settings = new
+{
+    DotnetPath = SpecialFolder.UserProfile().RelativeFile(@".dotnet-sdk-10/dotnet.exe"),
+
+    AssocArgs = "--verbosity quiet",
+
+    Extention = "cs1",
+
+    ProgID = "dotnet-fileapps",
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    // dummy
+    await Task.CompletedTask;
+
+    // Check platform type.
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+        throw new PavedMessageException("This script is only available for Windows.");
+    }
+
+    // Create or open the progid registry key
+    var progKey = Registry.CurrentUser.CreateSubKey(@$"Software\Classes\{settings.ProgID}\Shell\Open\Command");
+    if (progKey == null) throw new PavedMessageException("Unable to create or open ProgID registry key.");
+
+    // Make command line.
+    var assocCmdLine = @$"""{settings.DotnetPath}"" run {settings.AssocArgs} --file ""%1"" -- %*";
+
+    // Set progid key value
+    progKey.SetValue(null, assocCmdLine, RegistryValueKind.ExpandString);
+
+    // Create or open the extension registry key
+    var extKey = Registry.CurrentUser.CreateSubKey(@$"Software\Classes\{settings.Extention.EnsureStarts(".")}");
+    if (extKey == null) throw new PavedMessageException("Unable to create or open Extention registry key.");
+
+    // Set assosiate key value
+    extKey.SetValue(null, settings.ProgID, RegistryValueKind.String);
+
+    // Output of normal completion.
+    Console.WriteLine(Chalk.Green["The registry has been updated."]);
+});
