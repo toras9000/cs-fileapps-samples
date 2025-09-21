@@ -1,5 +1,5 @@
 #:package MQTTnet@5.0.1.1416
-#:package Lestaly.General@0.102.0
+#:package Lestaly.General@0.103.0
 using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;

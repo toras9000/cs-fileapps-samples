@@ -1,5 +1,5 @@
 #:package Microsoft.Playwright@1.55.0
-#:package Lestaly.General@0.102.0
+#:package Lestaly.General@0.103.0
 #:property PublishAot=false
 using Microsoft.Playwright;
 using Lestaly;

@@ -1,5 +1,5 @@
 #:package ClosedXML@0.105.0
-#:package Lestaly.General@0.102.0
+#:package Lestaly.General@0.103.0
 #:package CometFlavor.Unicode@0.7.0
 #:package Kokuban@0.2.0
 #:property PublishAot=false

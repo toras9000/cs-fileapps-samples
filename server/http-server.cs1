@@ -1,5 +1,5 @@
 #:sdk Microsoft.NET.Sdk.Web
-#:package Lestaly.General@0.102.0
+#:package Lestaly.General@0.103.0
 #:property PublishAot=false
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
