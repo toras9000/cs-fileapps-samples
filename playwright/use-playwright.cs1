@@ -1,0 +1,30 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Microsoft.Playwright@1.56.0
+#:package Lestaly.General@0.109.0
+#:property PublishAot=false
+using Microsoft.Playwright;
+using Lestaly;
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    Console.WriteLine("Prepare playwright");
+    Microsoft.Playwright.Program.Main(["install", "chromium", "--with-deps"]);
+
+    Console.WriteLine("Test page operation");
+    using var playwright = await Playwright.CreateAsync();
+    await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = true, ExecutablePath = "", });
+    var page = await browser.NewPageAsync();
+    var response = await page.GotoAsync("https://www.nuget.org/") ?? throw new PavedMessageException("Cannot access page");
+    await response.FinishedAsync();
+    var serach = page.Locator("input[id='search']");
+    await serach.FillAsync("playwright");
+    await serach.PressAsync("Enter");
+    var packages = await page.Locator("a.package-title").AllAsync();
+    foreach (var entry in packages)
+    {
+        var title = await entry.TextContentAsync();
+        Console.WriteLine($"Title={title?.Trim()}");
+    }
+});

@@ -1,0 +1,56 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.109.0
+#:package System.Data.SQLite.Core@1.0.119
+#:package Dapper@2.1.66
+#:package Kokuban@0.2.0
+using System.Data.SQLite;
+using System.Text;
+using Dapper;
+using Kokuban;
+using Lestaly;
+
+return await Paved.ProceedAsync(async () =>
+{
+    // Console-related preparations
+    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var signal = new SignalCancellationPeriod();
+
+    // Enter scan path
+    Console.WriteLine();
+    Console.WriteLine("input scan directory");
+    Console.Write(">");
+    var input = Console.ReadLine().Unquote();
+    if (input.IsWhite()) return;
+
+    var dbExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    dbExtensions.Add(".db");
+    dbExtensions.Add(".sqlite");
+
+    var scanDir = CurrentDir.RelativeDirectory(input);
+    foreach (var file in scanDir.EnumerateFiles("*", SearchOption.AllDirectories))
+    {
+        if (!dbExtensions.Contains(file.Extension)) continue;
+
+        try
+        {
+            Console.WriteLine(Chalk.Green[$"File: {file.FullName}"]);
+            var builder = new SQLiteConnectionStringBuilder();
+            builder.DataSource = file.FullName;
+            builder.Pooling = false;
+
+            using (var db = new SQLiteConnection(builder.ConnectionString))
+            {
+                await db.OpenAsync();
+                await db.ExecuteAsync("vacuum", commandType: System.Data.CommandType.Text);
+                await db.ExecuteAsync("reindex", commandType: System.Data.CommandType.Text);
+            }
+
+            Console.WriteLine(Chalk.Green[$"  Success"]);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Chalk.Red[$"  Error: {ex.Message}"]);
+        }
+    }
+
+});

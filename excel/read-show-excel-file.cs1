@@ -1,0 +1,68 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package ClosedXML@0.105.0
+#:package Lestaly.General@0.109.0
+#:package CometFlavor.Unicode@0.7.0
+#:package Kokuban@0.2.0
+#:property PublishAot=false
+using ClosedXML.Excel;
+using CometFlavor.Unicode.Extensions.Text;
+using Kokuban;
+using Lestaly;
+
+return await Paved.ProceedAsync(async () =>
+{
+    await Task.CompletedTask;
+
+    while (true)
+    {
+        try
+        {
+            Console.WriteLine("Read excel file"); 
+            Console.Write(">");
+            var inputPath = Console.ReadLine().Unquote().CancelIfWhite();
+            var inputFile = CurrentDir.RelativeFile(inputPath);
+            Console.WriteLine();
+
+            using var book = new XLWorkbook(inputFile.FullName);
+            Console.WriteLine(Chalk.Green[$"Worksheets in book: {inputFile.FullName}"]);
+            foreach (var sheet in book.Worksheets)
+            {
+                Console.WriteLine($"  {sheet.Name}");
+            }
+            Console.WriteLine();
+
+            var first = book.Worksheets.First();
+            Console.WriteLine(Chalk.Green[$"Some cells in sheet: {first.Name}"]);
+            var used = first.RangeUsed();
+            if (used == null) throw new Exception("Cannot detect used range");
+            var usedFirstCol = used.FirstColumn().ColumnNumber();
+            var usedFirstRow = used.FirstRow().RowNumber();
+            var numWidth = 4;
+            var colWidth = 14;
+            var eawMeasure = new EawMeasure(1, 2, 1);
+            var showRows = Math.Min(used.RowCount(), 10);
+            var showCols = Math.Min(used.ColumnCount(), 6);
+            var colLetters = Enumerable.Range(0, showCols).Select(n => XLHelper.GetColumnLetterFromNumber(usedFirstCol + n));
+            Console.WriteLine(colLetters.Select(c => c.PadRight(colWidth)).Prepend("".PadLeft(numWidth)).JoinString(" "));
+            for (var rowIdx = 0; rowIdx < showRows; rowIdx++)
+            {
+                var row = used.Row(1 + rowIdx);
+                var rowNum = row.RowNumber().ToString().PadLeft(numWidth);
+                Console.Write($"{rowNum} ");
+                for (var colIdx = 0; colIdx < showCols; colIdx++)
+                {
+                    var cellText = row.Cell(1 + colIdx).GetFormattedString();
+                    var showText = cellText.EllipsisByWidth(colWidth, eawMeasure).PadRight(colWidth);
+                    Console.Write($"{showText} ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Chalk.Red[$"Error: {ex.Message}"]);
+        }
+    }
+});
