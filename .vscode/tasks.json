@@ -9,7 +9,7 @@
                 "build",
                 "${file}",
                 "--output",
-                "${env:TEMP}/cs-filebased/${relativeFileDirname}/${fileBasenameNoExtension}"
+                "${env:TEMP}/cs-filebased/${workspaceFolderBasename}/${relativeFileDirname}/${fileBasenameNoExtension}"
             ],
             "problemMatcher": "$msCompile"
         }
