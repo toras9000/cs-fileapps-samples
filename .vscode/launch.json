@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${env:TEMP}/cs-filebased/${workspaceFolderBasename}/${relativeFileDirname}/${fileBasenameNoExtension}/${fileBasenameNoExtension}.dll",
+            "program": "${env:TEMP}/cs-filebased/${fileWorkspaceFolderBasename}/${relativeFileDirname}/${fileBasenameNoExtension}/${fileBasenameNoExtension}.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
