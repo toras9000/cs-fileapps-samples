@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package MQTTnet@5.0.1.1416
-#:package Lestaly.General@0.109.0
+#:package Lestaly.General@0.112.0
 #:package Kokuban@0.2.0
 using Lestaly;
 using Kokuban;
