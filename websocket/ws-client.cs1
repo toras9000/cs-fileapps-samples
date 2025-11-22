@@ -1,0 +1,52 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.112.0
+#:property PublishAot=false
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using Lestaly;
+
+var settings = new
+{
+    // WebSocket endpoint
+    WebSocketUri = new Uri("ws://localhost:9978/ws"),
+};
+
+return await Paved.RunAsync(async () =>
+{
+    // Prepare console
+    using var signal = new SignalCancellationPeriod();
+    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+
+    // Server information
+    Console.WriteLine($"Server address:");
+    Console.WriteLine($"    {settings.WebSocketUri}");
+    Console.WriteLine();
+
+    // Create client
+    var client = new ClientWebSocket();
+    await client.ConnectAsync(settings.WebSocketUri, signal.Token);
+
+    Console.WriteLine("Send message to server");
+    while (true)
+    {
+        Console.Write(">");
+        var text = Console.ReadLine();
+        if (text == null) break;
+        if (text.IsWhite()) continue;
+
+        using (var sendStream = WebSocketStream.CreateWritableMessageStream(client, WebSocketMessageType.Text))
+        {
+            await JsonSerializer.SerializeAsync(sendStream, new { message = text, }, cancellationToken: signal.Token);
+            await sendStream.FlushAsync();
+            Console.WriteLine(".. Send message");
+        }
+
+        using var recvStream = WebSocketStream.CreateReadableMessageStream(client);
+        using var recvReader = new StreamReader(recvStream);
+        var recvMsg = await recvReader.ReadToEndAsync(signal.Token);
+        Console.WriteLine(".. Recv message");
+        Console.WriteLine($".. -> {recvMsg}");
+    }
+
+});

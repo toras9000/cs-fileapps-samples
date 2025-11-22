@@ -1,0 +1,95 @@
+#!/usr/bin/env -S dotnet run --file 
+#:sdk Microsoft.NET.Sdk.Web
+#:package Lestaly.General@0.112.0
+#:property PublishAot=false
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Lestaly;
+
+var settings = new
+{
+    // Accept port for HTTP service.
+    PortNumber = 9978,
+
+    // Server name
+    ServerName = Environment.MachineName,
+
+    // WebSocket endpoint
+    WebSocketEndpoint = "/ws",
+};
+
+return await Paved.RunAsync(async () =>
+{
+    // Set output encoding to UTF8.
+    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+
+    // Server information
+    var serverAddr = $"http://{settings.ServerName}:{settings.PortNumber}";
+    Console.WriteLine($"Server address:");
+    Console.WriteLine($"    {serverAddr}");
+    Console.WriteLine();
+
+    // Web Server Configuration Builder
+    var builder = WebApplication.CreateBuilder();
+
+    // Build a server instance
+    var server = builder.Build();
+    server.UseWebSockets();
+
+    // Accept WebSocket
+    server.Use(async (context, next) =>
+    {
+        if (context.Request.Path == settings.WebSocketEndpoint)
+        {
+            if (context.WebSockets.IsWebSocketRequest)
+            {
+                using var ws = await context.WebSockets.AcceptWebSocketAsync();
+                var logger = context.RequestServices.GetService<ILogger>();
+                await wsEchoWorkAsync(ws, logger, default);
+            }
+            else
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            }
+        }
+        else
+        {
+            await next(context);
+        }
+    });
+
+    // Start HTTP Server
+    Console.WriteLine($"Start HTTP service.");
+    await server.RunAsync($"http://*:{settings.PortNumber}/");
+});
+
+async ValueTask wsEchoWorkAsync(WebSocket ws, ILogger? logger, CancellationToken cancelToken)
+{
+    while (true)
+    {
+        var check = await ws.ReceiveAsync(Memory<byte>.Empty, cancelToken);
+        if (check.MessageType == WebSocketMessageType.Close) break;
+
+        try
+        {
+            var message = default(JsonNode);
+            using (var recvStream = WebSocketStream.CreateReadableMessageStream(ws))
+            {
+                message = await JsonSerializer.DeserializeAsync<JsonNode>(recvStream, cancellationToken: cancelToken);
+                if (message == null) continue;
+            }
+            using (var sendStream = WebSocketStream.CreateWritableMessageStream(ws, WebSocketMessageType.Text))
+            {
+                message["echo"] = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.ffff");
+                await JsonSerializer.SerializeAsync(sendStream, message, cancellationToken: cancelToken);
+                await sendStream.FlushAsync(cancelToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, default, []);
+        }
+    }
+}
