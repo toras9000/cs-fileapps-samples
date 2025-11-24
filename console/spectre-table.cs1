@@ -1,0 +1,27 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Spectre.Console@0.54.0
+#:package Lestaly.General@0.112.0
+using System.Globalization;
+using Lestaly;
+using Spectre.Console;
+
+return await Paved.ProceedAsync(async () =>
+{
+    var table = new Table();
+
+    table.AddColumn(nameof(CultureInfo.LCID), c => c.Alignment = Justify.Right);
+    table.AddColumn(nameof(CultureInfo.Name));
+    table.AddColumn(nameof(CultureInfo.NativeName));
+
+    foreach (var culture in CultureInfo.GetCultures(CultureTypes.SpecificCultures))
+    {
+        table.AddRow([
+            $"{culture.LCID}".EscapeMarkup(),
+            culture.Name.EscapeMarkup(),
+            culture.NativeName.EscapeMarkup()
+        ]);
+    }
+
+    AnsiConsole.Write(table);
+
+});
