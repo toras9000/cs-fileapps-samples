@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.112.0
+#:package Lestaly.General@0.113.0
 #:property PublishAot=false
 using System.Net.WebSockets;
 using System.Text;
@@ -16,7 +16,7 @@ return await Paved.RunAsync(async () =>
 {
     // Prepare console
     using var signal = new SignalCancellationPeriod();
-    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var outenc = Console.OutputUtf8EncodingPeriod();
 
     // Server information
     Console.WriteLine($"Server address:");

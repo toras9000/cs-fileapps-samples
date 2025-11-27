@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.112.0
+#:package Lestaly.General@0.113.0
 using Lestaly;
 
 var settings = new

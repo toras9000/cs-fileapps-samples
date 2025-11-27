@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.112.0
+#:package Lestaly.General@0.113.0
 using System.Text;
 using Lestaly;
 
@@ -12,7 +12,7 @@ var settings = new
 try
 {
     // Prepare console
-    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     // Enter source directory

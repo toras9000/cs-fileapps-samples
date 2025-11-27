@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package AngleSharp@1.4.0
-#:package Lestaly.General@0.112.0
+#:package Lestaly.General@0.113.0
 using System.Security.Cryptography.X509Certificates;
 using AngleSharp;
 using AngleSharp.Html.Dom;
