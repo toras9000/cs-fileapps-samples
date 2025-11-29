@@ -1,0 +1,68 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.114.0
+#:package Kokuban@0.2.0
+#:package RefFile@0.1.1
+using Kokuban;
+using Lestaly;
+
+[assembly: RefFile(".rpc-contract.cs1")]
+
+public static class Helper
+{
+    public static async Task InterpretCommandsAsync(IMemoryService memory, CancellationToken cancelToken)
+    {
+        var delimiters = new char[] { ' ', '\t' };
+        while (true)
+        {
+            Console.Write(">");
+            var input = Console.ReadLine();
+            if (input == null) break;
+            if (input.IsWhite()) continue;
+
+            try
+            {
+                var cmd = input.TrimStart(delimiters).TakeSkipTokenAny(out var args, delimiters);
+                if (cmd.RoughAny(["help", "?"]))
+                {
+                    Console.WriteLine($"Command list");
+                    Console.WriteLine($"  get <key>");
+                    Console.WriteLine($"  set <key> <value>");
+                    Console.WriteLine($"  list");
+                }
+                else if (cmd.RoughAny(["get"]))
+                {
+                    var key = args.TrimStart(delimiters).TakeSkipTokenAny(out args, delimiters).ThrowIfWhite(() => new Exception("Parameter missing")).ToString();
+                    var value = await memory.GetEntryAsync(key);
+                    Console.WriteLine((value == null) ? $"no entry" : $"{key} = {value}");
+                }
+                else if (cmd.RoughAny(["set"]))
+                {
+                    var key = args.TrimStart(delimiters).TakeSkipTokenAny(out args, delimiters).ThrowIfWhite(() => new Exception("Parameter missing")).ToString();
+                    var value = args.TrimStart(delimiters).TakeSkipTokenAny(out args, delimiters).ThrowIfWhite(() => new Exception("Parameter missing")).ToString();
+                    await memory.SetEntryAsync(key, value);
+                    Console.WriteLine($"{key} = {value}");
+                }
+                else if (cmd.RoughAny(["list"]))
+                {
+                    var list = await memory.GetListAsync();
+                    foreach (var (key, value) in list)
+                    {
+                        Console.WriteLine($"{key} = {value}");
+                    }
+                    if (list.Length <= 0) Console.WriteLine($"no entry");
+                }
+                else
+                {
+                    throw new Exception("Unknown command");
+                }
+            }
+            catch (Exception ex) when (!cancelToken.IsCancellationRequested)
+            {
+                Console.WriteLine(Chalk.Yellow[ex.Message]);
+            }
+        }
+    }
+
+    public static ReadOnlySpan<char> ThrowIfWhite(this ReadOnlySpan<char> self, Func<Exception>? generator = null)
+        => self.IsEmpty ? throw generator?.Invoke() ?? new InvalidDataException() : self;
+}

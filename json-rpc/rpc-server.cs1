@@ -1,0 +1,108 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.114.0
+#:package Kokuban@0.2.0
+#:package StreamJsonRpc@2.22.23
+#:package RefFile@0.1.1
+#:property PublishAot=false
+using System.Net;
+using System.Net.Sockets;
+using Kokuban;
+using Lestaly;
+using static Helper;
+using StreamJsonRpc;
+
+[assembly: RefFile(".rpc-contract.cs1")]
+[assembly: RefFile(".rpc-helper.cs1")]
+
+var settings = new
+{
+    Service = new
+    {
+        Endpoint = new IPEndPoint(IPAddress.Any, 12233),
+    },
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var memory = new MemoryServer();
+
+    while (true)
+    {
+        try
+        {
+            Console.WriteLine($"Listen client : Endpoint={settings.Service.Endpoint}");
+            using var tcp = await acceptTcpAsync(settings.Service.Endpoint, signal.Token);
+            Console.WriteLine($"Accepted from {tcp.Client.RemoteEndPoint}");
+
+            Console.WriteLine($"Start RPC");
+            using var stream = tcp.GetStream();
+            using var service = JsonRpc.Attach(stream, memory);
+            using var breaker = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
+            service.Disconnected += (s, a) => breaker.Cancel();
+
+            Console.WriteLine($"Enter local op");
+            try
+            {
+                await InterpretCommandsAsync(memory, breaker.Token);
+            }
+            catch (OperationCanceledException) when (!signal.Token.IsCancellationRequested)
+            {
+                // disconnected
+            }
+        }
+        catch (Exception ex) when (!signal.Token.IsCancellationRequested)
+        {
+            Console.WriteLine(Chalk.Yellow[ex.Message]);
+        }
+    }
+});
+
+static async Task<TcpClient> acceptTcpAsync(IPEndPoint endpoint, CancellationToken cancelToken)
+{
+    using var listener = new TcpListener(endpoint);
+    listener.Start();
+    return await listener.AcceptTcpClientAsync();
+}
+
+public class MemoryServer : IMemoryService
+{
+    public Task<KeyValuePair<string, string>[]> GetListAsync()
+    {
+        lock (this.data)
+        {
+            return Task.FromResult(this.data.ToArray());
+        }
+    }
+
+    public Task<string?> GetEntryAsync(string key)
+    {
+        lock (this.data)
+        {
+            return Task.FromResult(this.data.GetValueOrDefault(key));
+        }
+    }
+
+    public Task<bool> SetEntryAsync(string key, string? value)
+    {
+        lock (this.data)
+        {
+            var result = default(bool);
+            if (value == null)
+            {
+                result = this.data.Remove(key);
+            }
+            else
+            {
+                result = this.data.ContainsKey(key);
+                this.data[key] = value;
+            }
+            return Task.FromResult(result);
+        }
+    }
+
+    public void Dispose() { }
+
+    private Dictionary<string, string> data = new();
+}

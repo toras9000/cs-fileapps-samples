@@ -1,0 +1,60 @@
+#!/usr/bin/env -S dotnet run --file
+#:package System.DirectoryServices@10.0.0
+#:package System.DirectoryServices.Protocols@10.0.0
+#:package Lestaly.General@0.114.0
+#:package Kokuban@0.2.0
+#:package RefFile@0.1.1
+using System.DirectoryServices.Protocols;
+using System.Net;
+using Kokuban;
+using Lestaly;
+
+[assembly: RefFile(".text-helper.cs1")]
+
+var settings = new
+{
+    // LDAP server settings
+    Server = new
+    {
+        // Host name or ip
+        Host = "ldap.myserver.home",
+
+        // Port number
+        Port = 636,
+
+        // Use SSL
+        Ssl = true,
+
+        // LDAP protocol version
+        ProtocolVersion = 3,
+    },
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    await Task.CompletedTask;
+
+    while (true)
+    {
+        Console.Write($"Enter DN:"); var dn = Console.ReadLine();
+        Console.Write($"Enter Pass:"); var pass = Console.ReadLine();
+
+        var server = new LdapDirectoryIdentifier(settings.Server.Host, settings.Server.Port);
+        using var ldap = new LdapConnection(server);
+        ldap.SessionOptions.SecureSocketLayer = settings.Server.Ssl;
+        ldap.SessionOptions.ProtocolVersion = settings.Server.ProtocolVersion;
+        ldap.AuthType = AuthType.Basic;
+
+        try
+        {
+            ldap.Credential = new NetworkCredential(dn, pass);
+            ldap.Bind();
+            Console.WriteLine(Chalk.Green[$"Success"]);
+        }
+        catch
+        {
+            Console.WriteLine(Chalk.Red[$"Failed to bind"]);
+        }
+        Console.WriteLine();
+    }
+});

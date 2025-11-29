@@ -1,0 +1,79 @@
+#!/usr/bin/env -S dotnet run --file
+#:package System.DirectoryServices@10.0.0
+#:package System.DirectoryServices.Protocols@10.0.0
+#:package Lestaly.General@0.114.0
+#:package Lestaly.Ldap@0.103.0
+#:package RefFile@0.1.1
+using System.DirectoryServices.Protocols;
+using System.Net;
+using Lestaly;
+
+[assembly: RefFile(".text-helper.cs1")]
+
+var settings = new
+{
+    // LDAP server settings
+    Server = new
+    {
+        // Host name or ip
+        Host = "ldap.myserver.home",
+
+        // Port number
+        Port = 636,
+
+        // Use SSL
+        Ssl = true,
+
+        // LDAP protocol version
+        ProtocolVersion = 3,
+
+        // Bind user credential, null is anonymous
+        BindCredential = new NetworkCredential("cn=config-admin,cn=config", "config-admin-pass"),
+
+        // Configuration Base DN
+        ConfigDn = "olcDatabase={2}mdb,cn=config",
+
+        // Access definitions to be added
+        AccessDefineFile = ThisSource.RelativeFile("00-config-add-access-data.txt"),
+    },
+
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    // Read the access definition to be added
+    var accessDefines = settings.Server.AccessDefineFile.EnumerateTextBlocks().ToArray();
+
+    // Bind to LDAP server
+    Console.WriteLine("Bind to LDAP server");
+    var server = new LdapDirectoryIdentifier(settings.Server.Host, settings.Server.Port);
+    using var ldap = new LdapConnection(server);
+    ldap.SessionOptions.SecureSocketLayer = settings.Server.Ssl;
+    ldap.SessionOptions.ProtocolVersion = settings.Server.ProtocolVersion;
+    ldap.AuthType = AuthType.Basic;
+    ldap.Credential = settings.Server.BindCredential;
+    ldap.Bind();
+
+    // Read the existing access definition.
+    Console.WriteLine("Request a search");
+    var configEntry = await ldap.GetEntryAsync(settings.Server.ConfigDn) ?? throw new PavedMessageException("unexpected result");
+    var accessExists = configEntry.EnumerateAttributeValues("olcAccess").OfType<string>().ToArray();
+
+    // Definitions that already exist shall be excluded from the addition.
+    Console.WriteLine("Detecting changes in access");
+    var addAccesses = accessDefines
+        .ExceptBy(accessExists.Select(a => a.RemoveIndex().NormalizeSpace()), a => a.NormalizeSpace())
+        .ToArray();
+    if (addAccesses.Length <= 0)
+    {
+        Console.WriteLine("... All access definitions already exist.");
+        return;
+    }
+
+    // Create change information to add attributes.
+    Console.WriteLine("Request a change in access.");
+    var modifyRsp = await ldap.AddAttributeAsync(settings.Server.ConfigDn, "olcAccess", addAccesses);
+    if (modifyRsp.ResultCode != 0) throw new PavedMessageException($"failed to modify: {modifyRsp.ErrorMessage}");
+
+    Console.WriteLine("Completed.");
+});
