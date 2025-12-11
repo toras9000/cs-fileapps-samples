@@ -1,0 +1,40 @@
+#!/usr/bin/env -S dotnet run --file
+#:package CometFlavor.Wpf.Win32@0.5.0
+#:property TargetFramework=net10.0-windows
+#:property UseWpf=true
+#:property PublishAot=false
+using System.IO;
+using System.Windows;
+using CometFlavor.Wpf.Win32.Dialogs;
+
+var dlg = new ShellOpenFileDialog();
+var parameter = new ShellOpenFileDialogParameter();
+parameter.Title = "ファイル選択テスト";
+parameter.FileMustExist = true;
+parameter.PathMustExist = true;
+parameter.ForceFileSystem = true;
+parameter.AllowMultiSelect = false;
+parameter.DontAddToRecent = false;
+parameter.ForceShowHidden = true;
+parameter.NoChangeDirectory = true;
+parameter.NoDereferenceLinks = false;
+parameter.NoValidate = false;
+parameter.ShareAware = true;
+parameter.StrictFileTypes = true;
+parameter.Filters.Add(new("Text files", "*.txt"));
+parameter.Filters.Add(new("All files", "*.*"));
+parameter.InitialFilterIndex = 2;
+parameter.PickFolders = false;
+
+var result = dlg.ShowDialog(parameter);
+if (result.Item != null)
+{
+    var file = new FileInfo(result.Item);
+    var msg = $"""
+    FilePath: {file.FullName}
+    Size: {file.Length}
+    Timestamp: {file.LastWriteTime}
+    """;
+    MessageBox.Show(msg);
+}
+

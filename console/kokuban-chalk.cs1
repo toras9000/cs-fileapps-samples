@@ -8,42 +8,39 @@ using Lestaly;
 
 return await Paved.ProceedAsync(async () =>
 {
-    static void writeColorLine(AnsiStyle chalk, AnsiStyle? ex = default, [CallerArgumentExpression(nameof(chalk))] string color = "")
-        => Console.WriteLine((ex ?? Chalk.BgBlack)[chalk[color.PadRight(25)]]);
+    var rows = new Row[]
+    {
+        new(new(Chalk.Black, Chalk.BgWhite),     new(Chalk.BgBlack,         Chalk.White)),
+        new(new(Chalk.Red),                      new(Chalk.BgRed,           Chalk.Black)),
+        new(new(Chalk.Green),                    new(Chalk.BgGreen,         Chalk.Black)),
+        new(new(Chalk.Yellow),                   new(Chalk.BgYellow,        Chalk.Black)),
+        new(new(Chalk.Blue),                     new(Chalk.BgBlue,          Chalk.Black)),
+        new(new(Chalk.Magenta),                  new(Chalk.BgMagenta,       Chalk.Black)),
+        new(new(Chalk.Cyan),                     new(Chalk.BgCyan,          Chalk.Black)),
+        new(new(Chalk.White),                    new(Chalk.BgWhite,         Chalk.Black)),
+        new(new(Chalk.Gray),                     new(Chalk.BgGray,          Chalk.Black)),
+        new(new(Chalk.BrightBlack),              new(Chalk.BgBrightBlack,   Chalk.Black)),
+        new(new(Chalk.BrightRed),                new(Chalk.BgBrightRed,     Chalk.Black)),
+        new(new(Chalk.BrightGreen),              new(Chalk.BgBrightGreen,   Chalk.Black)),
+        new(new(Chalk.BrightYellow),             new(Chalk.BgBrightYellow,  Chalk.Black)),
+        new(new(Chalk.BrightBlue),               new(Chalk.BgBrightBlue,    Chalk.Black)),
+        new(new(Chalk.BrightMagenta),            new(Chalk.BgBrightMagenta, Chalk.Black)),
+        new(new(Chalk.BrightCyan),               new(Chalk.BgBrightCyan,    Chalk.Black)),
+        new(new(Chalk.BrightWhite),              new(Chalk.BgBrightWhite,   Chalk.Black)),
+    };
 
-    writeColorLine(Chalk.Black, Chalk.BgWhite);
-    writeColorLine(Chalk.Red);
-    writeColorLine(Chalk.Green);
-    writeColorLine(Chalk.Yellow);
-    writeColorLine(Chalk.Blue);
-    writeColorLine(Chalk.Magenta);
-    writeColorLine(Chalk.Cyan);
-    writeColorLine(Chalk.White);
-    writeColorLine(Chalk.Gray);
-    writeColorLine(Chalk.BrightBlack);
-    writeColorLine(Chalk.BrightRed);
-    writeColorLine(Chalk.BrightGreen);
-    writeColorLine(Chalk.BrightYellow);
-    writeColorLine(Chalk.BrightBlue);
-    writeColorLine(Chalk.BrightMagenta);
-    writeColorLine(Chalk.BrightCyan);
-    writeColorLine(Chalk.BrightWhite);
-    writeColorLine(Chalk.BgBlack, Chalk.White);
-    writeColorLine(Chalk.BgRed, Chalk.Black);
-    writeColorLine(Chalk.BgGreen, Chalk.Black);
-    writeColorLine(Chalk.BgYellow, Chalk.Black);
-    writeColorLine(Chalk.BgBlue, Chalk.Black);
-    writeColorLine(Chalk.BgMagenta, Chalk.Black);
-    writeColorLine(Chalk.BgCyan, Chalk.Black);
-    writeColorLine(Chalk.BgWhite, Chalk.Black);
-    writeColorLine(Chalk.BgGray, Chalk.Black);
-    writeColorLine(Chalk.BgBrightBlack, Chalk.Black);
-    writeColorLine(Chalk.BgBrightRed, Chalk.Black);
-    writeColorLine(Chalk.BgBrightGreen, Chalk.Black);
-    writeColorLine(Chalk.BgBrightYellow, Chalk.Black);
-    writeColorLine(Chalk.BgBrightBlue, Chalk.Black);
-    writeColorLine(Chalk.BgBrightMagenta, Chalk.Black);
-    writeColorLine(Chalk.BgBrightCyan, Chalk.Black);
-    writeColorLine(Chalk.BgBrightWhite, Chalk.Black);
 
+    static void writeColorRow(Row row)
+    {
+        Console.Write((row.Item1.Extra ?? Chalk.BgBlack)[row.Item1.Style[row.Item1.Text.PadRight(25)]]);
+        Console.Write((row.Item2.Extra ?? Chalk.BgBlack)[row.Item2.Style[row.Item2.Text.PadRight(25)]]);
+        Console.WriteLine();
+    }
+    foreach (var row in rows)
+    {
+        writeColorRow(row);
+    }
 });
+
+record Stick(AnsiStyle Style, AnsiStyle? Extra = default, [CallerArgumentExpression(nameof(Style))] string Text = "");
+record Row(Stick Item1, Stick Item2);

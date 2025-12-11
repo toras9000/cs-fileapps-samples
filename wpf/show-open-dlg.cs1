@@ -1,0 +1,36 @@
+#!/usr/bin/env -S dotnet run --file
+#:property TargetFramework=net10.0-windows
+#:property UseWpf=true
+#:property PublishAot=false
+using System.IO;
+using System.Windows;
+using Microsoft.Win32;
+
+Thread.CurrentThread.SetApartmentState(ApartmentState.Unknown);
+Thread.CurrentThread.SetApartmentState(ApartmentState.STA);
+
+var dlg = new OpenFileDialog();
+dlg.Title = "ファイル選択テスト";
+dlg.AddExtension = true;
+dlg.AddToRecent = false;
+dlg.CheckFileExists = true;
+dlg.CheckPathExists = true;
+dlg.Multiselect = false;
+dlg.DereferenceLinks = true;
+dlg.ShowHiddenItems = false;
+dlg.ValidateNames = true;
+dlg.Filter = "Text files|*.txt|All files|*.*";
+dlg.FilterIndex = 2;
+
+var selected = dlg.ShowDialog();
+if (selected == true)
+{
+    var file = new FileInfo(dlg.FileName);
+    var msg = $"""
+    FilePath: {file.FullName}
+    Size: {file.Length}
+    Timestamp: {file.LastWriteTime}
+    """;
+    MessageBox.Show(msg);
+}
+
