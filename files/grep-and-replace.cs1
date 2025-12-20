@@ -1,0 +1,107 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.114.0
+using System.Text;
+using Kokuban;
+using Lestaly;
+
+var settings = new ReplaceSettings
+(
+    Extensions:
+    [
+        ".cs",
+    ],
+
+    LineReplace: (string line) =>
+    {
+        if (line.IsMatch(@"^\s*using\s+FluentAssertions\s*;\s*$"))
+        {
+            return "using AwesomeAssertions;";
+        }
+        return line;
+    },
+
+    Encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: true)
+);
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var targetExtensions = settings.Extensions.Select(e => e.EnsureStarts(".")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    Console.WriteLine("Search and replace file content");
+    Console.WriteLine($".. Target extensions: {targetExtensions.JoinString(", ")}");
+
+    Console.WriteLine("Enter search directory");
+    Console.Write(">");
+    var input = Console.ReadLine().Unquote()?.Trim();
+    if (input.IsWhite()) return;
+
+    var searchDir = input.AsDirectoryInfo();
+    var searchOpt = new EnumerationOptions()
+    {
+        MatchType = MatchType.Simple,
+        MatchCasing = MatchCasing.PlatformDefault,
+        RecurseSubdirectories = true,
+        ReturnSpecialDirectories = false,
+        AttributesToSkip = FileAttributes.None,
+        IgnoreInaccessible = true,
+    };
+
+    foreach (var dir in searchDir.EnumerateDirectories(".git", searchOpt))
+    {
+        if (dir.Parent == null) continue;
+        await replaceFilesContentAsync(dir.Parent, settings, signal.Token);
+    }
+
+});
+
+async ValueTask replaceFilesContentAsync(DirectoryInfo repoDir, ReplaceSettings settings, CancellationToken cancelToken)
+{
+    var extensions = settings.Extensions.Select(e => e.EnsureStarts(".")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    await repoDir.DoFilesAsync(async context =>
+    {
+        var relativePath = context.Item.RelativePathFrom(repoDir);
+
+        // Process directory
+        if (!context.IsFile)
+        {
+            // Do not traverse the SCM management directory.
+            if (context.Directory.Name.EqualsAnyIgnoreCase([".git", ".hg", ".svn"]))
+            {
+                Console.WriteLine(Chalk.Gray[$"Exclude: {relativePath}"]);
+                context.Break = true;
+            }
+            return;
+        }
+
+        // Process file
+        if (extensions.Contains(context.File.Extension()))
+        {
+            Console.WriteLine($"File: {relativePath}");
+            var source = await context.File.ReadAllLinesAsync(cancelToken);
+            var replaced = false;
+            var modified = source
+                .Select(line =>
+                {
+                    var processed = settings.LineReplace(line);
+                    if (processed != line) replaced = true;
+                    return processed;
+                })
+                .ToArray();
+            if (replaced)
+            {
+                await context.File.WriteAllLinesAsync(modified, settings.Encoding, cancelToken);
+                Console.WriteLine(Chalk.Green[$".. replaced"]);
+            }
+            else
+            {
+                Console.WriteLine(Chalk.Gray[$".. not modified"]);
+            }
+        }
+    });
+}
+
+record ReplaceSettings(IReadOnlyList<string> Extensions, Func<string, string> LineReplace, Encoding Encoding);

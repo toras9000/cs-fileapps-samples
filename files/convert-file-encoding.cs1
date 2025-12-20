@@ -1,0 +1,122 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package UTF.Unknown@2.6.0
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.114.0
+using System.Buffers;
+using System.Text;
+using Kokuban;
+using Lestaly;
+using UtfUnknown;
+
+var settings = new ConvertSettings
+(
+    Extensions:
+    [
+        ".cs",
+    ],
+
+    SizeLimit: -1,
+
+    Applicators:
+    [
+        charset => 0.8f <= charset.Confidence &&  charset.EncodingName.RoughAny(["shift_jis", "shift-jis", "sjis", "cp932"]),
+        charset => 0.9f <= charset.Confidence &&  charset.EncodingName.RoughAny(["euc-jp"]),
+        charset => 0.9f <= charset.Confidence &&  charset.EncodingName.RoughAny(["iso-2022-jp"]),
+    ],
+
+    SaveEncoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: true)
+);
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var targetExtensions = settings.Extensions.Select(e => e.EnsureStarts(".")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    Console.WriteLine("Search and replace file content");
+    Console.WriteLine($".. Target extensions: {targetExtensions.JoinString(", ")}");
+
+    Console.WriteLine("Enter search directory");
+    Console.Write(">");
+    var input = Console.ReadLine().Unquote()?.Trim();
+    if (input.IsWhite()) return;
+
+    var searchDir = input.AsDirectoryInfo();
+    var searchOpt = new EnumerationOptions()
+    {
+        MatchType = MatchType.Simple,
+        MatchCasing = MatchCasing.PlatformDefault,
+        RecurseSubdirectories = true,
+        ReturnSpecialDirectories = false,
+        AttributesToSkip = FileAttributes.None,
+        IgnoreInaccessible = true,
+    };
+
+    foreach (var dir in searchDir.EnumerateDirectories(".git", searchOpt))
+    {
+        if (dir.Parent == null) continue;
+        await convertFilesAsync(dir.Parent, settings, signal.Token);
+    }
+
+});
+
+async ValueTask convertFilesAsync(DirectoryInfo repoDir, ConvertSettings settings, CancellationToken cancelToken)
+{
+    var extensions = settings.Extensions.Select(e => e.EnsureStarts(".")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    await repoDir.DoFilesAsync(async context =>
+    {
+        var relativePath = context.Item.RelativePathFrom(repoDir);
+
+        // Process directory
+        if (!context.IsFile)
+        {
+            // Do not traverse the SCM management directory.
+            if (context.Directory.Name.EqualsAnyIgnoreCase([".git", ".hg", ".svn"]))
+            {
+                Console.WriteLine(Chalk.Gray[$"Exclude: {relativePath}"]);
+                context.Break = true;
+            }
+            return;
+        }
+
+        // Process file
+        if (!extensions.Contains(context.File.Extension()))
+        {
+            return;
+        }
+
+        Console.WriteLine($"File: {relativePath}");
+        if (0 < settings.SizeLimit)
+        {
+            if (settings.SizeLimit < context.File.Length || int.MaxValue < context.File.Length)
+            {
+                Console.WriteLine(Chalk.Yellow[$".. Too large: {context.File.Length.ToHumanize()}"]);
+                Console.WriteLine(Chalk.Yellow[$".. Skip: {relativePath}"]);
+                return;
+            }
+        }
+
+        var contents = new byte[context.File.Length];
+        using (var fileStream = context.File.OpenRead())
+        {
+            var length = await fileStream.ReadAsync(contents.AsMemory(), cancelToken);
+            if (length != context.File.Length) throw new Exception("Illegal read contents");
+        }
+
+        var charset = CharsetDetector.DetectFromBytes(contents);
+        var conversion = settings.Applicators.Any(p => p(charset.Detected));
+        if (!conversion)
+        {
+            Console.WriteLine(Chalk.Yellow[$".. Not applicable: {charset.Detected.EncodingName}, Confidence={charset.Detected.Confidence}"]);
+            Console.WriteLine(Chalk.Yellow[$".. Skip: {relativePath}"]);
+            return;
+        }
+
+        var text = charset.Detected.Encoding.GetString(contents);
+        await context.File.WriteAllTextAsync(text, settings.SaveEncoding, cancelToken);
+        Console.WriteLine(Chalk.Green[$".. converted"]);
+    });
+}
+
+record ConvertSettings(IReadOnlyList<string> Extensions, long SizeLimit, IReadOnlyList<Func<DetectionDetail, bool>> Applicators, Encoding SaveEncoding);
