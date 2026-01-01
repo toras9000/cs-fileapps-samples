@@ -1,11 +1,8 @@
 #!/usr/bin/env -S dotnet run --file
-#:package CometFlavor.Wpf.Win32@0.5.0
+#:package CometFlavor.Win32@0.1.1
 #:property TargetFramework=net10.0-windows
-#:property UseWpf=true
-#:property PublishAot=false
-using System.IO;
-using System.Windows;
-using CometFlavor.Wpf.Win32.Dialogs;
+using CometFlavor.Win32.Dialogs;
+using CometFlavor.Win32.Interaction;
 
 var dlg = new ShellOpenFileDialog();
 var parameter = new ShellOpenFileDialogParameter();
@@ -35,6 +32,6 @@ if (result.Item != null)
     Size: {file.Length}
     Timestamp: {file.LastWriteTime}
     """;
-    MessageBox.Show(msg);
+    MessageBox.Show(msg, "Selected File");
 }
 
