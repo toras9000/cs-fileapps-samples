@@ -1,3 +1,4 @@
 ﻿excel/*.xlsx
 mqtt/certs
 database/*.db
+certs/gen

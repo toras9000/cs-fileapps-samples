@@ -1,0 +1,22 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.115.0
+using System.Security.Cryptography.X509Certificates;
+using Lestaly;
+
+var settings = new
+{
+    CaCertFile = ThisSource.RelativeFile("gen/ca/test-ca.crt"),
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var caCert = X509Certificate2.CreateFromPem(settings.CaCertFile.ReadAllText());
+
+    using var store = new X509Store("Root", StoreLocation.CurrentUser);
+    store.Open(OpenFlags.ReadWrite);
+    store.Add(caCert);
+    Console.WriteLine("Registration completed.");
+
+});

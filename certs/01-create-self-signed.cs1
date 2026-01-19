@@ -1,0 +1,49 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.115.0
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using Lestaly;
+
+var settings = new
+{
+    Subjects = new Func<X500DistinguishedName>(() =>
+    {
+        var builder = new X500DistinguishedNameBuilder();
+        builder.AddCommonName("test-ca.example");
+        builder.AddOrganizationName("Test");
+        builder.AddStateOrProvinceName("Tokyo");
+        builder.AddCountryOrRegion("JP");
+        return builder.Build();
+    }),
+
+    Algorithm = HashAlgorithmName.SHA384,
+
+    ValidityPeriod = TimeSpan.FromDays(10 * 365),
+
+    CertFile = ThisSource.RelativeFile("gen/ca/test-ca.crt"),
+    KeyFile = ThisSource.RelativeFile("gen/ca/test-ca.key"),
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var caKey = ECDsa.Create();
+    var crtReq = new CertificateRequest(
+        subjectName: settings.Subjects(),
+        key: caKey,
+        hashAlgorithm: settings.Algorithm
+    );
+    crtReq.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority(pathLengthConstraint: null));
+    crtReq.CertificateExtensions.Add(new X509KeyUsageExtension(keyUsages: X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, critical: false));
+    crtReq.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(key: crtReq.PublicKey, critical: false));
+
+    var selfSigned = crtReq.CreateSelfSigned(
+        notBefore: DateTimeOffset.Now,
+        notAfter: DateTimeOffset.Now.Add(settings.ValidityPeriod)
+    );
+
+    await settings.CertFile.WithDirectoryCreate().WriteAllTextAsync(selfSigned.ExportCertificatePem());
+    await settings.KeyFile.WithDirectoryCreate().WriteAllTextAsync(caKey.ExportPkcs8PrivateKeyPem());
+    Console.WriteLine("Generation completed.");
+});
