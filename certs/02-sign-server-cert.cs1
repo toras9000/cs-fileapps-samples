@@ -48,8 +48,8 @@ return await Paved.ProceedAsync(async () =>
 
     var issuer = X509Certificate2.CreateFromPem(settings.CaCertFile.ReadAllText(), settings.CaKeyFile.ReadAllText());
 
-    var serverKey = RSA.Create(4096);
-    var crtReq = new CertificateRequest(settings.Subjects(), serverKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+    var serverKey = ECDsa.Create();
+    var crtReq = new CertificateRequest(settings.Subjects(), serverKey, HashAlgorithmName.SHA256);
     crtReq.CertificateExtensions.Add(settings.AltName());
     crtReq.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForEndEntity(critical: false));
     crtReq.CertificateExtensions.Add(new X509KeyUsageExtension(keyUsages: X509KeyUsageFlags.DigitalSignature, critical: false));
