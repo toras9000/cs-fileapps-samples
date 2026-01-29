@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.115.0
+#:package Lestaly.General@0.116.0
 #:package RefFile@0.2.0
 using System.Net;
 using System.Net.Sockets;
@@ -54,7 +54,7 @@ return await Paved.RunAsync(async () =>
         {
             // Waiting for input
             ConsoleUtils.WritePrompt();
-            var line = await ConsoleWig.InReader.ReadLineAsync(braker.Token);
+            var line = await Console.ReadLineAsync(braker.Token);
             if (line.IsEmpty()) continue;
 
             // To make it into a byte sequence with some encoding.
