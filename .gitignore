@@ -2,3 +2,4 @@
 mqtt/certs
 database/*.db
 certs/gen
+server/certs

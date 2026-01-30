@@ -1,0 +1,33 @@
+#!/usr/bin/env -S dotnet run --file 
+#:sdk Microsoft.NET.Sdk.Web
+#:package Lestaly.General@0.116.0
+#:property PublishAot=false
+using Microsoft.Extensions.FileProviders;
+using Lestaly;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Security;
+
+var settings = new
+{
+    CA = new
+    {
+        Subject = "SelfSigned CA by https-instant-selfcert",
+    },
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    Console.WriteLine("Check cert store");
+    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+    store.Open(OpenFlags.ReadWrite);
+
+    var existsCerts = store.Certificates.Where(c => c.SubjectName.Name.Contains(settings.CA.Subject)).ToArray();
+    if (0 < existsCerts.Length)
+    {
+        Console.WriteLine(".. Remove existing certs");
+        store.RemoveRange([.. existsCerts]);
+    }
+});

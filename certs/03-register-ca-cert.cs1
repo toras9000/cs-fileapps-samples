@@ -14,7 +14,7 @@ return await Paved.ProceedAsync(async () =>
 
     var caCert = X509Certificate2.CreateFromPem(settings.CaCertFile.ReadAllText());
 
-    using var store = new X509Store("Root", StoreLocation.CurrentUser);
+    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
     store.Open(OpenFlags.ReadWrite);
     store.Add(caCert);
     Console.WriteLine("Registration completed.");
