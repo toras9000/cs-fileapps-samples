@@ -1,0 +1,80 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Schick.Keycloak.RestApiClient@26.4.2
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.117.0
+#:property PublishAot=false
+using System.Text.Json;
+using FS.Keycloak.RestApiClient.Api;
+using FS.Keycloak.RestApiClient.Authentication.ClientFactory;
+using FS.Keycloak.RestApiClient.Authentication.Flow;
+using FS.Keycloak.RestApiClient.ClientFactory;
+using FS.Keycloak.RestApiClient.Model;
+using Kokuban;
+using Lestaly;
+
+var settings = new
+{
+    Credential = new PasswordGrantFlow
+    {
+        KeycloakUrl = "https://keycloak.myserver.home",
+        UserName = "keycloak-admin",
+        Password = "admin-password"
+    },
+
+    Realm = "master",
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    using var http = AuthenticationHttpClientFactory.Create(settings.Credential);
+    using var usersApi = ApiClientFactory.Create<UsersApi>(http);
+
+    Console.WriteLine("Get user list ..");
+    var users = await usersApi.GetUsersAsync(settings.Realm, cancellationToken: signal.Token);
+    printUserList(users);
+
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine()?.Trim();
+        if (input == null) break;
+
+        if (input.RoughAny(["list", "@"]))
+        {
+            users = await usersApi.GetUsersAsync(settings.Realm, cancellationToken: signal.Token);
+            printUserList(users);
+        }
+        else
+        {
+            var index = input.TryParseNumber<int>();
+            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+            if (index.Value < 0 || users.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+
+            var user = users[index.Value];
+            printUserDetails(user);
+        }
+    }
+
+});
+
+void printUserList(List<UserRepresentation> users)
+{
+    Console.WriteLine("Users:");
+    for (var i = 0; i < users.Count; i++)
+    {
+        var user = users[i];
+        Console.WriteLine($"  {i,3}: {user.Username} ({user.Id})");
+    }
+    Console.WriteLine();
+}
+
+void printUserDetails(UserRepresentation user)
+{
+    Console.WriteLine("User details:");
+    var options = new JsonSerializerOptions() { WriteIndented = true, };
+    var json = JsonSerializer.Serialize(user, options);
+    Console.WriteLine(json);
+    Console.WriteLine();
+}
