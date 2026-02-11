@@ -1,6 +1,10 @@
 #!/usr/bin/env -S dotnet run --file
+#:package StreamJsonRpc@2.24.84+RR
+using PolyType;
+using StreamJsonRpc;
 
-public interface IMemoryService : IDisposable
+[JsonRpcContract, GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial interface IMemoryService : IDisposable
 {
     Task<KeyValuePair<string, string>[]> GetListAsync();
     Task<string?> GetEntryAsync(string key);

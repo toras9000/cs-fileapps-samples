@@ -1,12 +1,11 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package RefFile@0.2.0
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Lestaly;
-
 [assembly: RefFile(".console-utils.cs1")]
 
 var settings = new
@@ -21,7 +20,6 @@ var settings = new
 return await Paved.RunAsync(async () =>
 {
     // Preparation for Console
-    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     // Indicate the status.

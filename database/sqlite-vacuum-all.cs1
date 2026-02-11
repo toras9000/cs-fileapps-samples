@@ -1,10 +1,9 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package System.Data.SQLite.Core@1.0.119
 #:package Dapper@2.1.66
 #:package Kokuban@0.2.0
 using System.Data.SQLite;
-using System.Text;
 using Dapper;
 using Kokuban;
 using Lestaly;
@@ -12,7 +11,6 @@ using Lestaly;
 return await Paved.ProceedAsync(async () =>
 {
     // Console-related preparations
-    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     // Enter scan path

@@ -1,13 +1,12 @@
 #!/usr/bin/env -S dotnet run --file
-#:package System.DirectoryServices@10.0.2
-#:package System.DirectoryServices.Protocols@10.0.2
-#:package Lestaly.General@0.116.0
+#:package System.DirectoryServices@10.0.3
+#:package System.DirectoryServices.Protocols@10.0.3
+#:package Lestaly.General@0.117.0
 #:package Lestaly.Ldap@0.104.0
 #:package RefFile@0.2.0
 using System.DirectoryServices.Protocols;
 using System.Net;
 using Lestaly;
-
 [assembly: RefFile(".text-helper.cs1")]
 
 var settings = new

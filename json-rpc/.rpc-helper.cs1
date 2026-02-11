@@ -1,10 +1,9 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package Kokuban@0.2.0
 #:package RefFile@0.2.0
 using Kokuban;
 using Lestaly;
-
 [assembly: RefFile(".rpc-contract.cs1")]
 
 public static class Helper

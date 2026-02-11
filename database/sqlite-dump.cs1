@@ -1,17 +1,15 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package System.Data.SQLite.Core@1.0.119
 #:package Kokuban@0.2.0
 using System.Data;
 using System.Data.SQLite;
-using System.Text;
 using Kokuban;
 using Lestaly;
 
 return await Paved.ProceedAsync(async () =>
 {
     // Console-related preparations
-    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     while (true)

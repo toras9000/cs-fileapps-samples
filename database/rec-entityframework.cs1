@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.116.0
-#:package Microsoft.EntityFrameworkCore.Relational@10.0.2
-#:package Microsoft.EntityFrameworkCore.Sqlite@10.0.2
+#:package Lestaly.General@0.117.0
+#:package Microsoft.EntityFrameworkCore.Relational@10.0.3
+#:package Microsoft.EntityFrameworkCore.Sqlite@10.0.3
 #:package Npgsql.EntityFrameworkCore.PostgreSQL@10.0.0
 #:property PublishAot=false
 using System.ComponentModel.DataAnnotations.Schema;

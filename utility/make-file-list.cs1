@@ -1,8 +1,7 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package Lestaly.Excel@0.101.0
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using Lestaly;
 
@@ -31,7 +30,6 @@ var settings = new
 return await Paved.ProceedAsync(async () =>
 {
     using var signal = new SignalCancellationPeriod();
-    using var outenc = Console.OutputUtf8EncodingPeriod();
 
     Console.WriteLine("Search Directory");
     Console.Write(">");

@@ -1,14 +1,9 @@
 #!/usr/bin/env -S dotnet run --file 
 #:sdk Microsoft.NET.Sdk.Web
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:property PublishAot=false
-using Microsoft.Extensions.FileProviders;
 using Lestaly;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Net.Security;
 
 var settings = new
 {

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Microsoft.Playwright@1.57.0
-#:package Lestaly.General@0.116.0
+#:package Microsoft.Playwright@1.58.0
+#:package Lestaly.General@0.117.0
 #:property PublishAot=false
 using Microsoft.Playwright;
 using Lestaly;

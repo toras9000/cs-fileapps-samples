@@ -1,9 +1,8 @@
 #!/usr/bin/env -S dotnet run --file 
 #:sdk Microsoft.NET.Sdk.Web
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:property PublishAot=false
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,9 +23,6 @@ var settings = new
 
 return await Paved.RunAsync(async () =>
 {
-    // Set output encoding to UTF8.
-    using var outenc = Console.OutputUtf8EncodingPeriod();
-
     // Server information
     var serverAddr = $"http://{settings.ServerName}:{settings.PortNumber}";
     Console.WriteLine($"Server address:");

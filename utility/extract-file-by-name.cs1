@@ -1,10 +1,9 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package Kurukuru@1.5.0
 using System.Text.RegularExpressions;
-using Lestaly;
 using Kurukuru;
-using System.Text;
+using Lestaly;
 
 var settings = new
 {
@@ -22,7 +21,6 @@ var settings = new
 return await Paved.ProceedAsync(async () =>
 {
     // Prepare console
-    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     // Enter source directory

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.117.0
 #:package StreamJsonRpc@2.24.84+RR
 #:package Kokuban@0.2.0
 #:package RefFile@0.2.0
@@ -9,7 +9,6 @@ using System.Net.Sockets;
 using Lestaly;
 using static Helper;
 using StreamJsonRpc;
-
 [assembly: RefFile(".rpc-contract.cs1")]
 [assembly: RefFile(".rpc-helper.cs1")]
 
