@@ -1,0 +1,84 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Schick.Keycloak.RestApiClient@26.5.3
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.119.0
+#:property PublishAot=false
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using FS.Keycloak.RestApiClient.Api;
+using FS.Keycloak.RestApiClient.Authentication.ClientFactory;
+using FS.Keycloak.RestApiClient.Authentication.Flow;
+using FS.Keycloak.RestApiClient.ClientFactory;
+using FS.Keycloak.RestApiClient.Model;
+using Kokuban;
+using Lestaly;
+
+var settings = new
+{
+    Credential = new PasswordGrantFlow
+    {
+        KeycloakUrl = "https://keycloak.myserver.home",
+        UserName = "keycloak-admin",
+        Password = "admin-password"
+    },
+
+    Realm = "master",
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    using var http = AuthenticationHttpClientFactory.Create(settings.Credential);
+    using var clientsApi = ApiClientFactory.Create<ClientsApi>(http);
+
+    Console.WriteLine("Get clients list ..");
+    var clients = await clientsApi.GetClientsAsync(settings.Realm, cancellationToken: signal.Token);
+    printClientList(clients);
+
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine()?.Trim();
+        if (input == null) break;
+
+        if (input.RoughAny(["list", "@"]))
+        {
+            clients = await clientsApi.GetClientsAsync(settings.Realm, cancellationToken: signal.Token);
+            printClientList(clients);
+        }
+        else
+        {
+            var index = input.TryParseNumber<int>();
+            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+            if (index.Value < 0 || clients.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+
+            var client = clients[index.Value];
+            printClientDetails(client);
+        }
+    }
+
+});
+
+void printClientList(List<ClientRepresentation> clients)
+{
+    Console.WriteLine("Clients:");
+    for (var i = 0; i < clients.Count; i++)
+    {
+        var client = clients[i];
+        Console.WriteLine($"  {i,3}: {client.ClientId} ({client.Id})");
+    }
+    Console.WriteLine();
+}
+
+void printClientDetails(ClientRepresentation client)
+{
+    Console.WriteLine("User details:");
+    var json = JsonSerializer.Serialize(client, SourceGenerationContext.Default.ClientRepresentation);
+    Console.WriteLine(json);
+    Console.WriteLine();
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(ClientRepresentation))]
+internal partial class SourceGenerationContext : JsonSerializerContext;

@@ -1,0 +1,83 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Schick.Keycloak.RestApiClient@26.5.3
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.119.0
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using FS.Keycloak.RestApiClient.Api;
+using FS.Keycloak.RestApiClient.Authentication.ClientFactory;
+using FS.Keycloak.RestApiClient.Authentication.Flow;
+using FS.Keycloak.RestApiClient.ClientFactory;
+using FS.Keycloak.RestApiClient.Model;
+using Kokuban;
+using Lestaly;
+
+var settings = new
+{
+    Credential = new PasswordGrantFlow
+    {
+        KeycloakUrl = "https://keycloak.myserver.home",
+        UserName = "keycloak-admin",
+        Password = "admin-password"
+    },
+
+    Realm = "master",
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    using var http = AuthenticationHttpClientFactory.Create(settings.Credential);
+    using var providersApi = ApiClientFactory.Create<IdentityProvidersApi>(http);
+
+    Console.WriteLine("Get providers list ..");
+    var providers = await providersApi.GetIdentityProviderInstancesAsync(settings.Realm, cancellationToken: signal.Token);
+    printProviderList(providers);
+
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine()?.Trim();
+        if (input == null) break;
+
+        if (input.RoughAny(["list", "@"]))
+        {
+            providers = await providersApi.GetIdentityProviderInstancesAsync(settings.Realm, cancellationToken: signal.Token);
+            printProviderList(providers);
+        }
+        else
+        {
+            var index = input.TryParseNumber<int>();
+            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+            if (index.Value < 0 || providers.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+
+            var provider = providers[index.Value];
+            printProviderDetails(provider);
+        }
+    }
+
+});
+
+void printProviderList(List<IdentityProviderRepresentation> providers)
+{
+    Console.WriteLine("Providers:");
+    for (var i = 0; i < providers.Count; i++)
+    {
+        var provider = providers[i];
+        Console.WriteLine($"  {i,3}: {provider.DisplayName} ({provider.ProviderId})");
+    }
+    Console.WriteLine();
+}
+
+void printProviderDetails(IdentityProviderRepresentation provider)
+{
+    Console.WriteLine("Provider details:");
+    var json = JsonSerializer.Serialize(provider, SourceGenerationContext.Default.IdentityProviderRepresentation);
+    Console.WriteLine(json);
+    Console.WriteLine();
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(IdentityProviderRepresentation))]
+internal partial class SourceGenerationContext : JsonSerializerContext;

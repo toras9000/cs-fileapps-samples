@@ -4,6 +4,7 @@
 #:package Lestaly.General@0.119.0
 #:property PublishAot=false
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FS.Keycloak.RestApiClient.Api;
 using FS.Keycloak.RestApiClient.Authentication.ClientFactory;
 using FS.Keycloak.RestApiClient.Authentication.Flow;
@@ -29,11 +30,11 @@ return await Paved.ProceedAsync(async () =>
     using var signal = new SignalCancellationPeriod();
 
     using var http = AuthenticationHttpClientFactory.Create(settings.Credential);
-    using var clientsApi = ApiClientFactory.Create<ClientsApi>(http);
+    using var usersApi = ApiClientFactory.Create<UsersApi>(http);
 
-    Console.WriteLine("Get client list ..");
-    var clients = await clientsApi.GetClientsAsync(settings.Realm, cancellationToken: signal.Token);
-    printClientList(clients);
+    Console.WriteLine("Get users list ..");
+    var users = await usersApi.GetUsersAsync(settings.Realm, cancellationToken: signal.Token);
+    printUserList(users);
 
     while (true)
     {
@@ -43,38 +44,41 @@ return await Paved.ProceedAsync(async () =>
 
         if (input.RoughAny(["list", "@"]))
         {
-            clients = await clientsApi.GetClientsAsync(settings.Realm, cancellationToken: signal.Token);
-            printClientList(clients);
+            users = await usersApi.GetUsersAsync(settings.Realm, cancellationToken: signal.Token);
+            printUserList(users);
         }
         else
         {
             var index = input.TryParseNumber<int>();
             if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
-            if (index.Value < 0 || clients.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+            if (index.Value < 0 || users.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
 
-            var client = clients[index.Value];
-            printClientDetails(client);
+            var user = users[index.Value];
+            printUserDetails(user);
         }
     }
 
 });
 
-void printClientList(List<ClientRepresentation> clients)
+void printUserList(List<UserRepresentation> users)
 {
-    Console.WriteLine("Clients:");
-    for (var i = 0; i < clients.Count; i++)
+    Console.WriteLine("Users:");
+    for (var i = 0; i < users.Count; i++)
     {
-        var client = clients[i];
-        Console.WriteLine($"  {i,3}: {client.ClientId} ({client.Id})");
+        var user = users[i];
+        Console.WriteLine($"  {i,3}: {user.Username} ({user.Id})");
     }
     Console.WriteLine();
 }
 
-void printClientDetails(ClientRepresentation client)
+void printUserDetails(UserRepresentation user)
 {
     Console.WriteLine("User details:");
-    var options = new JsonSerializerOptions() { WriteIndented = true, };
-    var json = JsonSerializer.Serialize(client, options);
+    var json = JsonSerializer.Serialize(user, SourceGenerationContext.Default.UserConsentRepresentation);
     Console.WriteLine(json);
     Console.WriteLine();
 }
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(UserRepresentation))]
+internal partial class SourceGenerationContext : JsonSerializerContext;

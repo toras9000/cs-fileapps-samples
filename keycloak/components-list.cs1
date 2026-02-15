@@ -2,8 +2,8 @@
 #:package Schick.Keycloak.RestApiClient@26.5.3
 #:package Kokuban@0.2.0
 #:package Lestaly.General@0.119.0
-#:property PublishAot=false
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FS.Keycloak.RestApiClient.Api;
 using FS.Keycloak.RestApiClient.Authentication.ClientFactory;
 using FS.Keycloak.RestApiClient.Authentication.Flow;
@@ -29,11 +29,11 @@ return await Paved.ProceedAsync(async () =>
     using var signal = new SignalCancellationPeriod();
 
     using var http = AuthenticationHttpClientFactory.Create(settings.Credential);
-    using var usersApi = ApiClientFactory.Create<UsersApi>(http);
+    using var componentsApi = ApiClientFactory.Create<ComponentApi>(http);
 
-    Console.WriteLine("Get user list ..");
-    var users = await usersApi.GetUsersAsync(settings.Realm, cancellationToken: signal.Token);
-    printUserList(users);
+    Console.WriteLine("Get components list ..");
+    var components = await componentsApi.GetComponentsAsync(settings.Realm, cancellationToken: signal.Token);
+    printComponentsList(components);
 
     while (true)
     {
@@ -43,38 +43,41 @@ return await Paved.ProceedAsync(async () =>
 
         if (input.RoughAny(["list", "@"]))
         {
-            users = await usersApi.GetUsersAsync(settings.Realm, cancellationToken: signal.Token);
-            printUserList(users);
+            components = await componentsApi.GetComponentsAsync(settings.Realm, cancellationToken: signal.Token);
+            printComponentsList(components);
         }
         else
         {
             var index = input.TryParseNumber<int>();
             if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
-            if (index.Value < 0 || users.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+            if (index.Value < 0 || components.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
 
-            var user = users[index.Value];
-            printUserDetails(user);
+            var component = components[index.Value];
+            printComponentDetails(component);
         }
     }
 
 });
 
-void printUserList(List<UserRepresentation> users)
+void printComponentsList(List<ComponentRepresentation> components)
 {
     Console.WriteLine("Users:");
-    for (var i = 0; i < users.Count; i++)
+    for (var i = 0; i < components.Count; i++)
     {
-        var user = users[i];
-        Console.WriteLine($"  {i,3}: {user.Username} ({user.Id})");
+        var component = components[i];
+        Console.WriteLine($"  {i,3}: {component.Name} ({component.Id})");
     }
     Console.WriteLine();
 }
 
-void printUserDetails(UserRepresentation user)
+void printComponentDetails(ComponentRepresentation component)
 {
     Console.WriteLine("User details:");
-    var options = new JsonSerializerOptions() { WriteIndented = true, };
-    var json = JsonSerializer.Serialize(user, options);
+    var json = JsonSerializer.Serialize(component, SourceGenerationContext.Default.ComponentRepresentation);
     Console.WriteLine(json);
     Console.WriteLine();
 }
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(ComponentRepresentation))]
+internal partial class SourceGenerationContext : JsonSerializerContext;
