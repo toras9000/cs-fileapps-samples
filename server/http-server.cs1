@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:sdk Microsoft.NET.Sdk.Web
-#:package Lestaly.General@0.117.0
+#:package Lestaly.General@0.119.0
 #:property PublishAot=false
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.StaticFiles;

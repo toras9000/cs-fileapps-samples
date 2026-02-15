@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package ClosedXML@0.105.0
-#:package Lestaly.General@0.117.0
+#:package Lestaly.General@0.119.0
 #:package CometFlavor.Unicode@0.9.0
 #:package Kokuban@0.2.0
 #:property PublishAot=false

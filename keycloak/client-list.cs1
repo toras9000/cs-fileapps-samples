@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Schick.Keycloak.RestApiClient@26.4.2
+#:package Schick.Keycloak.RestApiClient@26.5.3
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.117.0
+#:package Lestaly.General@0.119.0
 #:property PublishAot=false
 using System.Text.Json;
 using FS.Keycloak.RestApiClient.Api;

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.117.0
+#:package Lestaly.General@0.119.0
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Lestaly;

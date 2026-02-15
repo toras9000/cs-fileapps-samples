@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package Docker.DotNet@3.125.15
-#:package Lestaly.General@0.117.0
+#:package Lestaly.General@0.119.0
 using Docker.DotNet;
 using Lestaly;
 
