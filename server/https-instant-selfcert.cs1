@@ -15,7 +15,12 @@ var settings = new
     PortNumber = 9979,
 
     // Server name
-    ServerName = Environment.MachineName,
+    ServerNames = new[]
+    {
+        Environment.MachineName,
+        "myserver.home",
+        "localhost",
+    },
 
     // Server name
     LocalContents = ThisSource.RelativeDirectory(".."),
@@ -62,19 +67,23 @@ return await Paved.RunAsync(async () =>
         Console.WriteLine(".. Generate Server cert");
         var serverKey = RSA.Create();
         var subjectBuilder = new X500DistinguishedNameBuilder();
-        subjectBuilder.AddCommonName(settings.ServerName);
+        subjectBuilder.AddCommonName(settings.ServerNames.First());
+
         var altNameBuilder = new SubjectAlternativeNameBuilder();
-        altNameBuilder.AddDnsName(settings.ServerName);
-        altNameBuilder.AddDnsName($"*.{settings.ServerName}");
-        altNameBuilder.AddIpAddress(IPAddress.Parse("127.0.0.1"));
-        var nwInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+        var ipAddrs = NetworkInterface.GetAllNetworkInterfaces()
             .Where(nw => nw.OperationalStatus == OperationalStatus.Up)
-            .Where(nw => nw.NetworkInterfaceType != NetworkInterfaceType.Loopback && nw.NetworkInterfaceType != NetworkInterfaceType.Unknown)
             .Where(nw => nw.Supports(NetworkInterfaceComponent.IPv4) || nw.Supports(NetworkInterfaceComponent.IPv6))
+            .SelectMany(nw => nw.GetIPProperties().UnicastAddresses)
             .ToArray();
-        foreach (var addr in nwInterfaces.SelectMany(nw => nw.GetIPProperties().UnicastAddresses))
+        foreach (var ip in ipAddrs.Distinct())
         {
-            altNameBuilder.AddIpAddress(addr.Address);
+            altNameBuilder.AddIpAddress(ip.Address);
+        }
+        var hostNames = await Task.WhenAll(ipAddrs.Select(ip => Dns.GetHostEntryAsync(ip.Address)));
+        foreach (var name in settings.ServerNames.Concat(hostNames.SelectMany(h => h.Aliases.Prepend(h.HostName))).Distinct())
+        {
+            altNameBuilder.AddDnsName(name);
+            altNameBuilder.AddDnsName($"*.{name}");
         }
 
         var issuer = X509Certificate2.CreateFromPem(settings.CA.CertFile.ReadAllText(), settings.CA.KeyFile.ReadAllText());
@@ -120,7 +129,7 @@ return await Paved.RunAsync(async () =>
     }
 
     // Server information
-    var serverAddr = $"https://{settings.ServerName}:{settings.PortNumber}";
+    var serverAddr = $"https://{settings.ServerNames.First()}:{settings.PortNumber}";
     Console.WriteLine($"Server address:");
     Console.WriteLine($"    {serverAddr}");
     Console.WriteLine();
