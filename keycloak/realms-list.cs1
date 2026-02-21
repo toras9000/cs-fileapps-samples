@@ -1,0 +1,81 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Schick.Keycloak.RestApiClient@26.5.3
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.119.0
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using FS.Keycloak.RestApiClient.Api;
+using FS.Keycloak.RestApiClient.Authentication.ClientFactory;
+using FS.Keycloak.RestApiClient.Authentication.Flow;
+using FS.Keycloak.RestApiClient.ClientFactory;
+using FS.Keycloak.RestApiClient.Model;
+using Kokuban;
+using Lestaly;
+
+var settings = new
+{
+    Credential = new PasswordGrantFlow
+    {
+        KeycloakUrl = "https://keycloak.myserver.home",
+        UserName = "keycloak-admin",
+        Password = "admin-password"
+    },
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    using var http = AuthenticationHttpClientFactory.Create(settings.Credential);
+    using var realmsApi = ApiClientFactory.Create<RealmsAdminApi>(http);
+
+    Console.WriteLine("Get components list ..");
+    var realms = await realmsApi.GetAsync(cancellationToken: signal.Token);
+    printRealmsList(realms);
+
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine()?.Trim();
+        if (input == null) break;
+
+        if (input.RoughAny(["list", "@"]))
+        {
+            realms = await realmsApi.GetAsync(cancellationToken: signal.Token);
+            printRealmsList(realms);
+        }
+        else
+        {
+            var index = input.TryParseNumber<int>();
+            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+            if (index.Value < 0 || realms.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+
+            var realm = realms[index.Value];
+            printRealmDetails(realm);
+        }
+    }
+
+});
+
+void printRealmsList(List<RealmRepresentation> realms)
+{
+    Console.WriteLine("Users:");
+    for (var i = 0; i < realms.Count; i++)
+    {
+        var realm = realms[i];
+        Console.WriteLine($"  {i,3}: {realm.Realm} ({realm.Id})");
+    }
+    Console.WriteLine();
+}
+
+void printRealmDetails(RealmRepresentation realm)
+{
+    Console.WriteLine("User details:");
+    var json = JsonSerializer.Serialize(realm, SourceGenerationContext.Default.RealmRepresentation);
+    Console.WriteLine(json);
+    Console.WriteLine();
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(RealmRepresentation))]
+internal partial class SourceGenerationContext : JsonSerializerContext;
