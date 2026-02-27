@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Schick.Keycloak.RestApiClient@26.5.3
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.119.0
+#:package Lestaly.General@0.120.0
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FS.Keycloak.RestApiClient.Api;
@@ -39,22 +39,29 @@ return await Paved.ProceedAsync(async () =>
         var input = Console.ReadLine()?.Trim();
         if (input == null) break;
 
-        if (input.RoughAny(["list", "@"]))
+        try
         {
-            realms = await realmsApi.GetAsync(cancellationToken: signal.Token);
-            printRealmsList(realms);
-        }
-        else
-        {
-            var index = input.TryParseNumber<int>();
-            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
-            if (index.Value < 0 || realms.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+            var cmd = input.TakeSkipToken(out var arguments).Trim();
+            if (cmd.RoughAny(["list", "@"]))
+            {
+                realms = await realmsApi.GetAsync(cancellationToken: signal.Token);
+                printRealmsList(realms);
+            }
+            else
+            {
+                var index = input.TryParseNumber<int>();
+                if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+                if (index.Value < 0 || realms.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
 
-            var realm = realms[index.Value];
-            printRealmDetails(realm);
+                var realm = realms[index.Value];
+                printRealmDetails(realm);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Chalk.Red[$"Error: {ex.Message}"]);
         }
     }
-
 });
 
 void printRealmsList(List<RealmRepresentation> realms)

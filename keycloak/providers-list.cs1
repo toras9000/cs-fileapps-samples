@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Schick.Keycloak.RestApiClient@26.5.3
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.119.0
+#:package Lestaly.General@0.120.0
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FS.Keycloak.RestApiClient.Api;
@@ -32,7 +32,8 @@ return await Paved.ProceedAsync(async () =>
     using var providersApi = ApiClientFactory.Create<IdentityProvidersApi>(http);
 
     Console.WriteLine("Get providers list ..");
-    var providers = await providersApi.GetIdentityProviderInstancesAsync(settings.Realm, cancellationToken: signal.Token);
+    var realm = settings.Realm;
+    var providers = await providersApi.GetIdentityProviderInstancesAsync(realm, cancellationToken: signal.Token);
     printProviderList(providers);
 
     while (true)
@@ -41,19 +42,34 @@ return await Paved.ProceedAsync(async () =>
         var input = Console.ReadLine()?.Trim();
         if (input == null) break;
 
-        if (input.RoughAny(["list", "@"]))
+        try
         {
-            providers = await providersApi.GetIdentityProviderInstancesAsync(settings.Realm, cancellationToken: signal.Token);
-            printProviderList(providers);
-        }
-        else
-        {
-            var index = input.TryParseNumber<int>();
-            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
-            if (index.Value < 0 || providers.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+            var cmd = input.TakeSkipToken(out var arguments).Trim();
+            if (cmd.RoughAny(["list", "@"]))
+            {
+                providers = await providersApi.GetIdentityProviderInstancesAsync(realm, cancellationToken: signal.Token);
+                printProviderList(providers);
+            }
+            else if (cmd.RoughAny(["realm"]))
+            {
+                var target = arguments.Trim().ToString();
+                providers = await providersApi.GetIdentityProviderInstancesAsync(target, cancellationToken: signal.Token);
+                realm = target;
+                Console.WriteLine($"Change realm: {realm}");
+            }
+            else
+            {
+                var index = input.TryParseNumber<int>();
+                if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+                if (index.Value < 0 || providers.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
 
-            var provider = providers[index.Value];
-            printProviderDetails(provider);
+                var provider = providers[index.Value];
+                printProviderDetails(provider);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Chalk.Red[$"Error: {ex.Message}"]);
         }
     }
 

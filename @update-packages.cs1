@@ -2,7 +2,7 @@
 #:package NuGet.Protocol@7.3.0
 #:package R3@1.3.0
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.119.0
+#:package Lestaly.General@0.120.0
 #:property PublishAot=false
 using System.Text.RegularExpressions;
 using Kokuban;
@@ -40,7 +40,9 @@ return await Paved.ProceedAsync(async () =>
     var logger = NullLogger.Instance;
 
     // Dictionary of packages to be updated
-    var versions = settings.FixedVersions.ToDictionary(p => p.Id, p => (PackageIdentity?)p);
+    var versions = settings.FixedVersions
+        .Where(p => p.Id != "Dummy")
+        .ToDictionary(p => p.Id, p => (PackageIdentity?)p);
 
     // Detection regular expression for package reference directives
     var detector = new Regex(@"^#:package\s+(?<package>[a-zA-Z0-9_\-\.]+)\s*@\s*(?<version>.+)\s*");
@@ -67,6 +69,7 @@ return await Paved.ProceedAsync(async () =>
             // Determine if the package is eligible for renewal
             var srcName = match.Groups["package"].Value;
             var srcVer = match.Groups["version"].Value;
+            if (srcVer.Trim() == "*") continue;
             if (!versions.TryGetValue(srcName, out var identity))
             {
                 // Interpret the original version to determine if it is a pre-release.

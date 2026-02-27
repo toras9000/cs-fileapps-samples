@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Schick.Keycloak.RestApiClient@26.5.3
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.119.0
+#:package Lestaly.General@0.120.0
 #:property PublishAot=false
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -33,7 +33,8 @@ return await Paved.ProceedAsync(async () =>
     using var clientsApi = ApiClientFactory.Create<ClientsApi>(http);
 
     Console.WriteLine("Get clients list ..");
-    var clients = await clientsApi.GetClientsAsync(settings.Realm, cancellationToken: signal.Token);
+    var realm = settings.Realm;
+    var clients = await clientsApi.GetClientsAsync(realm, cancellationToken: signal.Token);
     printClientList(clients);
 
     while (true)
@@ -42,19 +43,34 @@ return await Paved.ProceedAsync(async () =>
         var input = Console.ReadLine()?.Trim();
         if (input == null) break;
 
-        if (input.RoughAny(["list", "@"]))
+        try
         {
-            clients = await clientsApi.GetClientsAsync(settings.Realm, cancellationToken: signal.Token);
-            printClientList(clients);
-        }
-        else
-        {
-            var index = input.TryParseNumber<int>();
-            if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
-            if (index.Value < 0 || clients.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
+            var cmd = input.TakeSkipToken(out var arguments).Trim();
+            if (cmd.RoughAny(["list", "@"]))
+            {
+                clients = await clientsApi.GetClientsAsync(realm, cancellationToken: signal.Token);
+                printClientList(clients);
+            }
+            else if (cmd.RoughAny(["realm"]))
+            {
+                var target = arguments.Trim().ToString();
+                clients = await clientsApi.GetClientsAsync(target, cancellationToken: signal.Token);
+                realm = target;
+                Console.WriteLine($"Change realm: {realm}");
+            }
+            else
+            {
+                var index = input.TryParseNumber<int>();
+                if (!index.HasValue) { Console.WriteLine(Chalk.Yellow["Invalid number"]); continue; }
+                if (index.Value < 0 || clients.Count <= index.Value) { Console.WriteLine(Chalk.Yellow["Out of range"]); continue; }
 
-            var client = clients[index.Value];
-            printClientDetails(client);
+                var client = clients[index.Value];
+                printClientDetails(client);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Chalk.Red[$"Error: {ex.Message}"]);
         }
     }
 
