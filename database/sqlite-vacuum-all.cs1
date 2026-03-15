@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package Lestaly.General@0.120.0
 #:package System.Data.SQLite.Core@1.0.119
-#:package Dapper@2.1.66
+#:package Dapper@2.1.72
 #:package Kokuban@0.2.0
 using System.Data.SQLite;
 using Dapper;
