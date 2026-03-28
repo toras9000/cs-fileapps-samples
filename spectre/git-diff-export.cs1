@@ -1,0 +1,162 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Spectre.Console@0.54.0
+#:package LibGit2Sharp@0.31.0
+#:package Lestaly.General@0.120.0
+#:property PublishAot=false
+using Lestaly;
+using LibGit2Sharp;
+using Spectre.Console;
+
+var settings = new
+{
+    HistoryFile = ThisSource.RelativeFile(".history.json"),
+    HistoryCount = 5,
+    ExportDir = ThisSource.RelativeDirectory("export-diff"),
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    // Select repository & branch
+    var repository = default(Repository);
+    var branch = default(Branch);
+    while (repository == null || branch == null)
+    {
+        try
+        {
+            repository = await selectGitRepositoryAsync(settings.HistoryFile, settings.HistoryCount, signal.Token);
+            branch = await selectGitBranchAsync(repository, signal.Token);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"{ex.Message}");
+        }
+    }
+
+    // Select commits
+    var commits = await selectGitCommitsAsync(repository, branch, signal.Token);
+
+    // Export diffs
+    var exportDir = settings.ExportDir.RelativeDirectory($"{DateTime.Now:yyyyMMdd-HHmmss}");
+    await exportCommitDiffsAsync(exportDir, repository, commits, signal.Token);
+});
+
+// Select repository
+async ValueTask<Repository> selectGitRepositoryAsync(FileInfo historyFile, int historyCount, CancellationToken cancelToken)
+{
+    // Load history 
+    var history = default(string[]);
+    try { history = await historyFile.ReadJsonAsync<string[]>(cancelToken); } catch { }
+
+    // Show history
+    var recentDirs = history?.Where(p => Directory.Exists(p)).Take(historyCount).ToArray();
+    if (0 < recentDirs?.Length)
+    {
+        var recentRows = new Rows(recentDirs.Index().Select(r => new Columns(new Text($"{1 + r.Index}."), new TextPath(r.Item)) { Expand = false }));
+        var panel = new Panel(recentRows)
+            .Header("Recent repositories")
+            .Border(BoxBorder.Rounded)
+            .BorderStyle(Color.SandyBrown);
+        AnsiConsole.Write(panel);
+    }
+
+    // Enter/Select repositroy
+    AnsiConsole.Write($"Enter repository path");
+    if (0 < recentDirs?.Length) AnsiConsole.Write("(or history number)");
+    AnsiConsole.WriteLine();
+    while (true)
+    {
+        AnsiConsole.Write(">");
+        var input = Console.ReadLine();
+        if (input == null) throw new OperationCanceledException();
+        if (input.IsWhiteSpace()) continue;
+
+        // Interpret input
+        var path = input.Unquote();
+        if (recentDirs != null && input.TryParseNumber<int>() is int recentNum)
+        {
+            if (recentDirs.ElementAtOrDefault(recentNum - 1) is var recentPath and not null) path = recentPath;
+        }
+        if (!Repository.IsValid(path))
+        {
+            AnsiConsole.MarkupLine($"[yellow]Not valid directory: {path}[/]");
+            continue;
+        }
+        var repository = new Repository(path);
+
+        // Save history 
+        try { await historyFile.WritePrettyJsonAsync((recentDirs ?? []).Prepend(path).Distinct(), cancelToken); } catch { }
+
+        AnsiConsole.MarkupLine($"[green].. {path}[/]");
+        return repository;
+    }
+}
+
+// Select branch
+async Task<Branch?> selectGitBranchAsync(Repository repository, CancellationToken cancelToken)
+{
+    // filter local branch
+    var localBranches = repository.Branches.Where(b => !b.IsRemote).ToArray();
+    if (localBranches.Length <= 0) throw new OperationCanceledException("No local branches");
+
+    // select branch
+    AnsiConsole.WriteLine("Select branch");
+    var selector = new SelectionPrompt<Branch>()
+        .Title($"[DarkOrange]---- {localBranches.Length} local branches ------------[/]")
+        .AddChoices(localBranches)
+        .UseConverter(b => b.FriendlyName);
+    var branch = AnsiConsole.Prompt(selector);
+
+    AnsiConsole.MarkupLine($"[green].. {branch.FriendlyName}[/]");
+    return branch;
+}
+
+// Select commits
+async ValueTask<Commit[]> selectGitCommitsAsync(Repository repository, Branch branch, CancellationToken cancelToken)
+{
+    var defaultBranch = repository.Branches.FirstOrDefault(b => b.IsRemote & b.IsCurrentRepositoryHead) ?? repository.Branches["main"] ?? repository.Branches["master"];
+
+    var filter = new CommitFilter();
+    filter.IncludeReachableFrom = branch;
+    filter.ExcludeReachableFrom = branch == defaultBranch ? null : defaultBranch;
+    filter.FirstParentOnly = true;
+    filter.SortBy = CommitSortStrategies.Topological;
+    var commits = repository.Commits.QueryBy(filter).ToArray();
+
+    // select branch
+    AnsiConsole.WriteLine("Select commits");
+    var selector = new MultiSelectionPrompt<Commit>()
+        .Title($"[DarkOrange]---- {commits.Length} commits ------------[/]")
+        .AddChoices(commits)
+        .UseConverter(b => $"{b.Sha[..8]} - {b.MessageShort.TakeLine()}");
+    foreach (var commit in commits)
+    {
+        selector.Select(commit);
+    }
+    var selectedCommits = AnsiConsole.Prompt(selector);
+
+    AnsiConsole.MarkupLine($"[green].. {selectedCommits.Count} commits[/]");
+    return selectedCommits.ToArray();
+}
+
+// Export diff
+async Task exportCommitDiffsAsync(DirectoryInfo exportDir, Repository repository, Commit[] commits, CancellationToken cancelToken)
+{
+    AnsiConsole.WriteLine("Export diff");
+    await AnsiConsole.Status()
+        .Spinner(Spinner.Known.Dots)
+        .SpinnerStyle(Style.Parse("bold yellow"))
+        .StartAsync("Export", async ctx =>
+        {
+            var caption = ctx.Status;
+            foreach (var commit in commits.Index())
+            {
+                ctx.Status = $"{caption} ... {commit.Item.Sha}";
+                var diff = repository.Diff.Compare<Patch>(commit.Item.Parents.FirstOrDefault()?.Tree, commit.Item.Tree);
+                var file = exportDir.RelativeFile($"{commit.Index:D3}-{commit.Item.Sha[..8]}.txt");
+                await file.WithDirectoryCreate().WriteAllTextAsync(diff.Content, cancelToken);
+            }
+        });
+    AnsiConsole.MarkupLine($"[green].. Completed[/]");
+}
