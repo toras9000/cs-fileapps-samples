@@ -1,0 +1,79 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Microsoft.Extensions.DataIngestion.MarkItDown@10.4.0-preview.1.26160.2
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.121.0
+#:property PublishAot=false
+using Kokuban;
+using Lestaly;
+using Microsoft.Extensions.DataIngestion;
+
+var settings = new
+{
+    McpEndpoint = new Uri("http://localhost:3001/mcp"),
+    OutputDir = ThisSource.RelativeDirectory("result"),
+    MediaTypes = new Dictionary<string, string>
+    {
+        ["docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ["xls"] = "application/excel",
+        ["xlsx"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ["xlsm"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ["pptx"] = "application/vnd.openxmlformats-officedocument.presentationml",
+        ["pdf"] = "application/pdf",
+        ["htm"] = "text/html",
+        ["html"] = "text/html",
+        ["zip"] = "application/zip",
+/*
+        ["jpg"] = "image/jpeg",
+        ["jpeg"] = "image/jpeg",
+        ["png"] = "image/png",
+        ["bmp"] = "image/bmp",
+        ["tiff"] = "image/tiff",
+        ["wav"] = "audio/x-wav",
+        ["mp3"] = "audio/mpeg",
+        ["m4a"] = "video/mp4",
+        ["mp4"] = "video/mp4",
+*/
+    },
+};
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var mediaTypes = settings.MediaTypes.ToDictionary(e => e.Key.TrimStart('.'), e => e.Value, StringComparer.OrdinalIgnoreCase);
+
+    var reader = new MarkItDownMcpReader(settings.McpEndpoint);
+
+    Console.WriteLine("Enter document path");
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine()?.Unquote();
+        if (input == null) break;
+        if (input.IsWhite()) continue;
+
+        try
+        {
+            var file = input.AsFileInfo();
+            var media = mediaTypes.GetValueOrDefault(file.Extension.TrimStart('.')) ?? throw new InvalidDataException("Unknown extension");
+            using var stream = file.OpenRead();
+            var result = await reader.ReadAsync(stream, file.Name, media, signal.Token);
+
+            var outputDir = settings.OutputDir.RelativeDirectory($"{DateTime.Now:yyyyMMdd-HHmmss}").WithCreate();
+            foreach (var section in result.Sections.Index())
+            {
+                await outputDir.RelativeFile($"Section-{section.Index:D3}.md").WriteAllTextAsync(section.Item.GetMarkdown());
+            }
+            foreach (var content in result.EnumerateContent().Index())
+            {
+                await outputDir.RelativeFile($"Content-{content.Index:D3}.md").WriteAllTextAsync(content.Item.GetMarkdown());
+            }
+            Console.WriteLine($".. Completed");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Chalk.Red[$"Error: {ex.Message}"]);
+        }
+    }
+
+});
