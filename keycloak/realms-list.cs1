@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Schick.Keycloak.RestApiClient@26.5.3
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.120.0
+#:package Lestaly.General@0.121.0
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FS.Keycloak.RestApiClient.Api;
