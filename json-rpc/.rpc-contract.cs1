@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file
-#:package StreamJsonRpc@2.24.84+RR
+#:package StreamJsonRpc@2.24.92+RR
 using PolyType;
 using StreamJsonRpc;
 
