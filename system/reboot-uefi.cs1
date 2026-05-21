@@ -1,0 +1,31 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.128.0
+using System.Security.Principal;
+using Lestaly;
+using Lestaly.Cx;
+
+if (OperatingSystem.IsWindows())
+{
+    var identity = WindowsIdentity.GetCurrent();
+    var principal = new WindowsPrincipal(identity);
+    if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
+    {
+        _ = CmdShell.ExecAsync("dotnet", ["run", "--file", ThisSource.File()], verb: "runas");
+        return;
+    }
+    _ = await "shutdown".args("/fw", "/r", "/t", 0);
+}
+else if (OperatingSystem.IsLinux())
+{
+    var uid = await "id".args("-u").result().output(trim: true);
+    if (uid != "0")
+    {
+        _ = CmdShell.ExecAsync("sudo", ["dotnet", "run", "--file", ThisSource.File()], verb: "runas");
+        return;
+    }
+    _ = await "systemctl".args("reboot", "--firmware-setup");
+}
+else
+{
+    Console.WriteLine("Not supported");
+}
