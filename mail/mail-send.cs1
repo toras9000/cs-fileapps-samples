@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package MailKit@4.16.0
+#:package MailKit@4.17.0
 using MailKit.Net.Smtp;
 using MimeKit;
 using MailKit.Security;

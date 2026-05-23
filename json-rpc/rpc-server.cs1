@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.128.0
+#:package Lestaly.General@0.130.0
 #:package Kokuban@0.2.0
-#:package StreamJsonRpc@2.24.92+RR
+#:package StreamJsonRpc@2.25.25+RR
 #:package RefFile@0.2.0
 #:property PublishAot=false
 using System.Net;

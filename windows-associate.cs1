@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.128.0
+#:package Lestaly.General@0.130.0
 #:package Kokuban@0.2.0
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -13,7 +13,7 @@ var settings = new
 
     AssocArgs = "--verbosity quiet",
 
-    Extention = "cs1",
+    Extension = "cs1",
 
     ProgID = "dotnet-fileapps",
 };
@@ -51,7 +51,7 @@ return await Paved.ProceedAsync(async () =>
     progKey.SetValue(null, assocCmdLine, RegistryValueKind.ExpandString);
 
     // Create or open the extension registry key
-    var extKey = Registry.CurrentUser.CreateSubKey(@$"Software\Classes\{settings.Extention.EnsureStarts(".")}");
+    var extKey = Registry.CurrentUser.CreateSubKey(@$"Software\Classes\{settings.Extension.EnsureStarts(".")}");
     if (extKey == null) throw new PavedMessageException("Unable to create or open Extention registry key.");
 
     // Set assosiate key value
