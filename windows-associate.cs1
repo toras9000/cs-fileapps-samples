@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.130.0
+#:package Lestaly.General@0.132.0
 #:package Kokuban@0.2.0
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -54,7 +54,7 @@ return await Paved.ProceedAsync(async () =>
     var extKey = Registry.CurrentUser.CreateSubKey(@$"Software\Classes\{settings.Extension.EnsureStarts(".")}");
     if (extKey == null) throw new PavedMessageException("Unable to create or open Extention registry key.");
 
-    // Set assosiate key value
+    // Set associate key value
     extKey.SetValue(null, settings.ProgID, RegistryValueKind.String);
 
     // Output of normal completion.
