@@ -1,0 +1,41 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.132.0
+#:property PublishAot=false
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Schema;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Lestaly;
+
+return await Paved.ProceedAsync(async () =>
+{
+    var options = new JsonSerializerOptions();
+    options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+    options.WriteIndented = true;
+    options.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
+    options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+    options.MakeReadOnly();
+    var schema = typeof(Container).GetJsonSchemaWithMetadata();
+    var schemaJson = schema.ToJsonString(options);
+    Console.WriteLine(schemaJson);
+    await ThisSource.RelativeFile($"output/MetaSchema-{DateTime.Now:yyyyMMdd-HHmmss}.json").WriteAllTextAsync(schemaJson);
+});
+
+enum Category { Alpha, Bravo, Charlie, }
+[JsonSchema(Description = "Type=Option")]
+record Option(
+    [property: JsonSchema(Description = "Option Text")] string? Text = default,
+    [property: JsonSchema(Description = "Option Number")] int? Number = default,
+    [property: JsonSchema(Description = "Option Category", ValueType = JsonSchemaValueType.String)] Category? Category = default);
+[JsonSchema(Description = "Type=Item")]
+record Item(
+    [property: JsonSchema(Description = "Item Text")] string Text,
+    [property: JsonSchema(Description = "Item Number")] int Number,
+    [property: JsonSchema(Description = "Item Category")] Category Category
+);
+[JsonSchema(Description = "Type=Container")]
+record Container(
+    [property: JsonSchema(Description = "Container Items")] Item[] Items,
+    [property: JsonSchema(Description = "Container Options")] Option[]? Options
+);
