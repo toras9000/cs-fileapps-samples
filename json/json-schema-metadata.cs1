@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.132.0
+#:package Lestaly.General@0.133.0
 #:property PublishAot=false
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -19,7 +19,7 @@ return await Paved.ProceedAsync(async () =>
     var schema = typeof(Container).GetJsonSchemaWithMetadata();
     var schemaJson = schema.ToJsonString(options);
     Console.WriteLine(schemaJson);
-    await ThisSource.RelativeFile($"output/MetaSchema-{DateTime.Now:yyyyMMdd-HHmmss}.json").WriteAllTextAsync(schemaJson);
+    await ThisSource.RelativeFile($"output/MetaSchema-{DateTime.Now:yyyyMMdd-HHmmss}.json").WithDirectoryCreate().WriteAllTextAsync(schemaJson);
 });
 
 enum Category { Alpha, Bravo, Charlie, }
