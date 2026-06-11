@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.133.0
+#:package Lestaly.General@0.134.0
 #:property PublishAot=false
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -27,12 +27,14 @@ enum Category { Alpha, Bravo, Charlie, }
 record Option(
     [property: JsonSchema(Description = "Option Text")] string? Text = default,
     [property: JsonSchema(Description = "Option Number")] int? Number = default,
-    [property: JsonSchema(Description = "Option Category", ValueType = JsonSchemaValueType.String)] Category? Category = default);
+    [property: JsonSchema(Description = "Option Category")] Category? Category = default
+);
 [JsonSchema(Description = "Type=Item")]
 record Item(
     [property: JsonSchema(Description = "Item Text")] string Text,
     [property: JsonSchema(Description = "Item Number")] int Number,
-    [property: JsonSchema(Description = "Item Category")] Category Category
+    [property: JsonSchema(Description = "Item Category")] Category Category,
+    [property: JsonSchema(Description = "Item Category Value", ValueType = JsonSchemaValueType.Integer)] Category CategoryValue
 );
 [JsonSchema(Description = "Type=Container")]
 record Container(
