@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package Spectre.Console@0.57.2
-#:package LibGit2Sharp@0.31.0
+#:package LibGit2Sharp@0.32.0
 #:package Lestaly.General@0.141.0
 #:property PublishAot=false
 using Lestaly;
