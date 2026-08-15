@@ -6,3 +6,5 @@ server/certs
 spectre/.history.json
 spectre/export-diff
 json/output
+doc/download
+doc/output

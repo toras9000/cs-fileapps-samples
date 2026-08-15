@@ -1,0 +1,48 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Tivarloa@0.3.0
+#:package Lestaly.General@0.141.0
+using Lestaly;
+using Tivarloa;
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var context = new ExtractContext(
+        DownloadDir: ThisSource.RelativeDirectory("download").WithCreate(),
+        OutputDir: ThisSource.RelativeDirectory("output").WithCreate()
+    );
+
+    await extractWordAsync(context, new Uri("https://word.to/static/samples/docx/sample-10pages.docx"), signal.Token);
+    await extractWordAsync(context, new Uri("https://word.to/static/samples/docx/sample-1page.docx"), signal.Token);
+    await extractWordAsync(context, new Uri("https://word.to/static/samples/docx/sample-5pages.docx"), signal.Token);
+    await extractWordAsync(context, new Uri("https://github.com/opavon/ThesisTemplate/raw/refs/heads/main/Thesis_and_Cover_Template.docx"), signal.Token);
+
+    await extractPdfAsync(context, new Uri("http://it-gyousei.com/download/doc/soft_kaihatst_keiyaku_p001.pdf"), signal.Token);
+    await extractPdfAsync(context, new Uri("http://it-gyousei.com/download/doc/chosaku_riyou.pdf"), signal.Token);
+    await extractPdfAsync(context, new Uri("http://it-gyousei.com/download/doc/genkou_irai.pdf"), signal.Token);
+
+});
+
+async ValueTask extractWordAsync(ExtractContext context, Uri url, CancellationToken breaker)
+{
+    var downloadFile = await context.Http.GetFileAsync(url, context.DownloadDir, cancelToken: breaker);
+    var wordText = context.WordExtractor.Extract(downloadFile);
+    var textFile = context.OutputDir.RelativeFile($"{downloadFile.BaseName()}.txt");
+    await textFile.WriteAllTextAsync(wordText, breaker);
+}
+
+async ValueTask extractPdfAsync(ExtractContext context, Uri url, CancellationToken breaker)
+{
+    var downloadFile = await context.Http.GetFileAsync(url, context.DownloadDir, cancelToken: breaker);
+    var wordText = context.PdfExtractor.Extract(downloadFile);
+    var textFile = context.OutputDir.RelativeFile($"{downloadFile.BaseName()}.txt");
+    await textFile.WriteAllTextAsync(wordText, breaker);
+}
+
+record ExtractContext(DirectoryInfo DownloadDir, DirectoryInfo OutputDir)
+{
+    public HttpClient Http { get; } = new();
+    public WordTextExtractor WordExtractor { get; } = new();
+    public PdfTextExtractor PdfExtractor { get; } = new();
+}

@@ -1,0 +1,18 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Tivarloa@0.3.0
+#:package Lestaly.General@0.141.0
+using Lestaly;
+using Tivarloa;
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var signal = new SignalCancellationPeriod();
+
+    var url = new Uri("https://github.com/opavon/ThesisTemplate/raw/refs/heads/main/Thesis_and_Cover_Template.docx");
+    var extractor = new WordTextExtractor();
+    var outline = await extractor.ExtractOutlineAsync(url, default, signal.Token);
+    foreach (var section in outline)
+    {
+        Console.WriteLine($"{section.Number} {section.Caption}");
+    }
+});
