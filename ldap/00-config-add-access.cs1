@@ -1,8 +1,8 @@
 #!/usr/bin/env -S dotnet run --file
 #:package System.DirectoryServices@10.0.11
 #:package System.DirectoryServices.Protocols@10.0.11
-#:package Lestaly.General@0.141.0
-#:package Lestaly.Ldap@0.109.0
+#:package Lestaly.General@0.143.0
+#:package Lestaly.Ldap@0.109.1
 #:package RefFile@0.2.0
 using System.DirectoryServices.Protocols;
 using System.Net;
