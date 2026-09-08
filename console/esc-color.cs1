@@ -1,0 +1,44 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.143.0
+using System.Runtime.CompilerServices;
+using Lestaly;
+using static Lestaly.ColorEsc;
+
+return await Paved.ProceedAsync(static async () =>
+{
+    var rows = new Row[]
+    {
+        new(new(FG.Black, BG.White),    new(BG.Black,         FG.White)),
+        new(new(FG.DarkRed),            new(BG.DarkRed,       FG.Black)),
+        new(new(FG.DarkGreen),          new(BG.DarkGreen,     FG.Black)),
+        new(new(FG.DarkYellow),         new(BG.DarkYellow,    FG.Black)),
+        new(new(FG.DarkBlue),           new(BG.DarkBlue,      FG.Black)),
+        new(new(FG.DarkMagenta),        new(BG.DarkMagenta,   FG.Black)),
+        new(new(FG.DarkCyan),           new(BG.DarkCyan,      FG.Black)),
+        new(new(FG.LightGray),          new(BG.LightGray,     FG.Black)),
+        new(new(FG.DarkGray),           new(BG.DarkGray,      FG.Black)),
+        new(new(FG.Red),                new(BG.Red,           FG.Black)),
+        new(new(FG.Green),              new(BG.Green,         FG.Black)),
+        new(new(FG.Yellow),             new(BG.Yellow,        FG.Black)),
+        new(new(FG.Blue),               new(BG.Blue,          FG.Black)),
+        new(new(FG.Magenta),            new(BG.Magenta,       FG.Black)),
+        new(new(FG.Cyan),               new(BG.Cyan,          FG.Black)),
+        new(new(FG.White),              new(BG.White,         FG.Black)),
+        new(new(FGx.Orange),            new(BGx.Orange,       FG.Black)),
+        new(new(FGx.DarkOrange),        new(BGx.DarkOrange,   FG.Black)),
+    };
+
+    static void writeColorRow(Row row)
+    {
+        Console.Write($"{row.Item1.Style}{row.Item1.Extra}{row.Item1.Text,-25}{FG.Default}{BG.Default}");
+        Console.Write($"{row.Item2.Style}{row.Item2.Extra}{row.Item2.Text,-25}{FG.Default}{BG.Default}");
+        Console.WriteLine();
+    }
+    foreach (var row in rows)
+    {
+        writeColorRow(row);
+    }
+});
+
+record Stick(string Style, string? Extra = default, [CallerArgumentExpression(nameof(Style))] string Text = "");
+record Row(Stick Item1, Stick Item2);

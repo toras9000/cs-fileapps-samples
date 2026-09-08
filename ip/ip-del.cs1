@@ -1,0 +1,52 @@
+#!/usr/bin/env -S dotnet run --file
+#:property TargetFramework=net10.0-windows7.0
+#:package Spectre.Console@0.57.2
+#:package NebriaChip.Ip.Win@1.1.0
+#:package Lestaly@0.143.0
+using System.Net;
+using System.Net.NetworkInformation;
+using Lestaly;
+using NebriaChip.Ip.Win;
+using Spectre.Console;
+
+return await Paved.RunAsync(async () =>
+{
+    if (!WinUAC.IsAdminRole())
+    {
+        _ = CmdShell.ExecAsync("dotnet", ["run", "--file", ThisSource.File()], verb: "runas");
+        return;
+    }
+
+    using var signal = new SignalCancellationPeriod();
+
+    var nwifSelector = new SelectionPrompt<NetworkInterface>()
+        .Title($"[DarkOrange]---- Select Network Interfaces ------------[/]")
+        .AddChoices(NetworkInterface.GetAllNetworkInterfaces().Where(nwif => nwif.Supports(NetworkInterfaceComponent.IPv4) || nwif.Supports(NetworkInterfaceComponent.IPv6)).ToArray())
+        .UseConverter(b => b.Name);
+    var nwif = await AnsiConsole.PromptAsync(nwifSelector, signal.Token);
+
+    var addrOperator = new WinIpAddrOperator(new() { ThrowOnError = true });
+
+    while (true)
+    {
+        nwif = NetworkInterface.GetAllNetworkInterfaces().First(n => n.Id == nwif.Id);
+        var ipSelector = new SelectionPrompt<IPAddress>()
+            .Title($"[DarkOrange]---- Select Delete IP ------------[/]")
+            .AddChoices(nwif.GetIPProperties().UnicastAddresses.Select(u => u.Address))
+            .UseConverter(a => a.ToString());
+        var ip = await AnsiConsole.PromptAsync(ipSelector, signal.Token);
+
+        try
+        {
+            Console.WriteLine($"Delete IP address");
+            addrOperator.DeleteUnicastAddress(nwif, ip, 0);
+            Console.WriteLine($".. Deleted");
+            Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLineInterpolated($"[red]{ex.Message}[/]");
+        }
+    }
+
+});

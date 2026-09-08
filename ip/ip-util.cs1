@@ -1,0 +1,103 @@
+#!/usr/bin/env -S dotnet run --file
+#:property TargetFramework=net10.0-windows7.0
+#:package Spectre.Console@0.57.2
+#:package NebriaChip.Ip.Win@1.1.0
+#:package Lestaly@0.143.0
+using System.Net.NetworkInformation;
+using Lestaly;
+using NebriaChip.Ip.Win;
+using Spectre.Console;
+
+return await Paved.RunAsync(async () =>
+{
+    if (!WinUAC.IsAdminRole())
+    {
+        _ = CmdShell.ExecAsync("dotnet", ["run", "--file", ThisSource.File()], verb: "runas");
+        return;
+    }
+
+    using var signal = new SignalCancellationPeriod();
+
+    // Select interaface
+    var nwifSelector = new SelectionPrompt<NetworkInterface>()
+        .Title($"[DarkOrange]---- Network Interfaces ------------[/]")
+        .AddChoices(NetworkInterface.GetAllNetworkInterfaces().Where(nwif => nwif.Supports(NetworkInterfaceComponent.IPv4) || nwif.Supports(NetworkInterfaceComponent.IPv6)).ToArray())
+        .UseConverter(b => b.Name);
+    var nwif = await AnsiConsole.PromptAsync(nwifSelector, signal.Token);
+
+    // Create context
+    var addrOperator = new WinIpAddrOperator(new() { ThrowOnError = true });
+    var context = new IpOpContext(nwif, addrOperator);
+
+    AnsiConsole.WriteLine($"Target Interface: {nwif.Name}");
+    AnsiConsole.WriteLine($"ex:");
+    AnsiConsole.WriteLine($">list");
+    AnsiConsole.WriteLine($">add 192.168.1.123/24");
+    AnsiConsole.WriteLine($">del 192.168.1.123/24");
+    AnsiConsole.WriteLine();
+    AnsiConsole.WriteLine($"Enter command:");
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine();
+        if (input == null) break;
+        if (input.IsWhiteSpace()) continue;
+
+        try
+        {
+            var token = input.AsMemory().Trim().TakeSkipToken(out var arguments);
+            if (token.Span.RoughAny(["list", "l"]))
+            {
+                await cmdListIpAsync(context, arguments, signal.Token);
+            }
+            else if (token.Span.RoughAny(["create", "c", "add", "a"]))
+            {
+                await cmdCreateIpAsync(context, arguments, signal.Token);
+            }
+            else if (token.Span.RoughAny(["remove", "r", "delete", "del", "d"]))
+            {
+                await cmdDeleteIpAsync(context, arguments, signal.Token);
+            }
+            else
+            {
+                throw new PavedMessageException($"Unknown command: {token}");
+            }
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLineInterpolated($"[red]{ex.Message}[/]");
+        }
+    }
+
+});
+
+async Task cmdListIpAsync(IpOpContext context, ReadOnlyMemory<char> arguments, CancellationToken cancelToken)
+{
+    var nwif = NetworkInterface.GetAllNetworkInterfaces().First(nwif => nwif.Id == context.Interface.Id);
+    var addrs = nwif.GetIPProperties().UnicastAddresses.Select(u => u);
+    Console.WriteLine($"Address list:");
+    foreach (var addr in addrs)
+    {
+        Console.WriteLine($".. {addr.Address}/{addr.PrefixLength}");
+    }
+}
+
+async Task cmdCreateIpAsync(IpOpContext context, ReadOnlyMemory<char> arguments, CancellationToken cancelToken)
+{
+    var addr = IPNetAddress.TryParse(arguments.Span.TrimStart().TakeSkipToken(out var next), out var a) ? a : throw new Exception("Invalid Address/Prefix was specified.");
+
+    Console.WriteLine($"Add address");
+    context.Operator.CreateUnicastAddress(context.Interface, addr);
+    await context.Operator.WaitDadStateAsync(context.Interface, addr.IP, cancelToken);
+    Console.WriteLine($"DAD OK");
+}
+
+async Task cmdDeleteIpAsync(IpOpContext context, ReadOnlyMemory<char> arguments, CancellationToken cancelToken)
+{
+    var addr = IPNetAddress.TryParse(arguments.Span.TrimStart().TakeSkipToken(out var next), out var a) ? a : throw new Exception("Invalid Address/Prefix was specified.");
+
+    Console.WriteLine($"Delete address");
+    context.Operator.DeleteUnicastAddress(context.Interface, addr);
+}
+
+public record IpOpContext(NetworkInterface Interface, WinIpAddrOperator Operator);

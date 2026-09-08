@@ -1,0 +1,54 @@
+#!/usr/bin/env -S dotnet run --file
+#:property TargetFramework=net10.0-windows7.0
+#:package Spectre.Console@0.57.2
+#:package NebriaChip.Ip.Win@1.1.0
+#:package Lestaly@0.143.0
+using System.Net;
+using System.Net.NetworkInformation;
+using Lestaly;
+using NebriaChip.Ip.Win;
+using Spectre.Console;
+
+return await Paved.RunAsync(async () =>
+{
+    if (!WinUAC.IsAdminRole())
+    {
+        _ = CmdShell.ExecAsync("dotnet", ["run", "--file", ThisSource.File()], verb: "runas");
+        return;
+    }
+
+    using var signal = new SignalCancellationPeriod();
+
+    // Select interaface
+    var nwifSelector = new SelectionPrompt<NetworkInterface>()
+        .Title($"[DarkOrange]---- Select Network Interfaces ------------[/]")
+        .AddChoices(NetworkInterface.GetAllNetworkInterfaces().Where(nwif => nwif.Supports(NetworkInterfaceComponent.IPv4) || nwif.Supports(NetworkInterfaceComponent.IPv6)).ToArray())
+        .UseConverter(b => b.Name);
+    var nwif = await AnsiConsole.PromptAsync(nwifSelector, signal.Token);
+
+    var addrOperator = new WinIpAddrOperator(new() { ThrowOnError = true });
+
+    AnsiConsole.WriteLine($"Enter the IP Address/Prefix to add (ex: 192.168.1.123/24)");
+    while (true)
+    {
+        Console.Write(">");
+        var input = Console.ReadLine();
+        if (input == null) break;
+        if (input.IsWhiteSpace()) continue;
+
+        try
+        {
+            var addr = IPNetAddress.Parse(input);
+            Console.WriteLine($"Add IP address");
+            addrOperator.CreateUnicastAddress(nwif, addr);
+            await addrOperator.WaitDadStateAsync(nwif, addr.IP, signal.Token);
+            Console.WriteLine($".. DAD OK");
+            Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLineInterpolated($"[red]{ex.Message}[/]");
+        }
+    }
+
+});
