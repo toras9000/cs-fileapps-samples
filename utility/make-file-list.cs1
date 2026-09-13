@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.143.0
+#:package Lestaly.General@0.145.0
 #:package Lestaly.Excel@0.104.1
 using System.Reflection;
 using System.Text.RegularExpressions;
