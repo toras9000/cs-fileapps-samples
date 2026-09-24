@@ -1,12 +1,12 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package Lestaly.General@0.145.0
-#:package System.Data.SQLite.Core@1.0.119
+#:package Microsoft.EntityFrameworkCore.Sqlite@10.0.12
 #:package Dapper@2.1.86
 #:package Kokuban@0.2.0
-using System.Data.SQLite;
 using Dapper;
 using Kokuban;
 using Lestaly;
+using Microsoft.Data.Sqlite;
 
 return await Paved.ProceedAsync(async () =>
 {
@@ -32,11 +32,11 @@ return await Paved.ProceedAsync(async () =>
         try
         {
             Console.WriteLine(Chalk.Green[$"File: {file.FullName}"]);
-            var builder = new SQLiteConnectionStringBuilder();
+            var builder = new SqliteConnectionStringBuilder();
             builder.DataSource = file.FullName;
             builder.Pooling = false;
 
-            using (var db = new SQLiteConnection(builder.ConnectionString))
+            using (var db = new SqliteConnection(builder.ConnectionString))
             {
                 await db.OpenAsync();
                 await db.ExecuteAsync("vacuum", commandType: System.Data.CommandType.Text);

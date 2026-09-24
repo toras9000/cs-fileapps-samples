@@ -1,11 +1,11 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package Lestaly.General@0.145.0
-#:package System.Data.SQLite.Core@1.0.119
+#:package Microsoft.EntityFrameworkCore.Sqlite@10.0.12
 #:package Kokuban@0.2.0
-using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using Kokuban;
 using Lestaly;
+using System.Data;
 
 return await Paved.ProceedAsync(async () =>
 {
@@ -36,15 +36,14 @@ return await Paved.ProceedAsync(async () =>
             var exportDir = dbFile.RelativeDirectory($"{dbFile.Name}-{DateTime.Now:yyyyMMdd-HHmmss}");
 
             // Databese connection configuration
-            var config = new SQLiteConnectionStringBuilder();
+            var config = new SqliteConnectionStringBuilder();
             config.DataSource = dbFile.FullName;
-            config.FailIfMissing = true;
-            config.ReadOnly = true;
+            config.Mode = SqliteOpenMode.ReadOnly;
             config.ForeignKeys = true;
             config.Pooling = false;
 
             // Open database
-            using var db = new SQLiteConnection(config.ConnectionString);
+            using var db = new SqliteConnection(config.ConnectionString);
             await db.OpenAsync();
 
             // Get table list
