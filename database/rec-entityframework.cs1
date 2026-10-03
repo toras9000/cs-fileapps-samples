@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.145.0
+#:package Lestaly.General@0.147.0
 #:package Microsoft.EntityFrameworkCore.Relational@10.0.12
 #:package Microsoft.EntityFrameworkCore.Sqlite@10.0.12
 #:package Npgsql.EntityFrameworkCore.PostgreSQL@10.0.3

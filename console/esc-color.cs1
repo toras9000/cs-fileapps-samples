@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.145.0
+#:package Lestaly.General@0.147.0
 using System.Runtime.CompilerServices;
 using Lestaly;
 using static Lestaly.ColorEsc;

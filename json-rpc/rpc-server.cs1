@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.145.0
+#:package Lestaly.General@0.147.0
 #:package Kokuban@0.2.0
 #:package StreamJsonRpc@2.25.29+RR
 #:package RefFile@0.2.0

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Lestaly.General@0.145.0
+#:package Lestaly.General@0.147.0
 #:package Lestaly.Excel@0.104.1
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
