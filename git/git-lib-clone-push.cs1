@@ -1,0 +1,78 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package LibGit2Sharp@0.32.0
+#:package Lestaly.General@0.147.0
+using Lestaly;
+using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
+
+return await Paved.ProceedAsync(async () =>
+{
+    // temporary directory
+    using var tempDir = new TempDir();
+
+    // clone source
+    var repoUri = new Uri("https://myserver/user/test-repo.git");
+    var credential = new UsernamePasswordCredentials() { Username = "user", Password = "user-key", };
+
+    // handlers
+    var credentialProvider = new CredentialsHandler((url, username, types) => credential);
+    var certificateChecker = new CertificateCheckHandler((certificate, valid, host) => true);  // If necessary, an override of the certificate check.
+
+    // clone repository
+    Console.WriteLine($"Clone repository");
+    var cloneOptions = new CloneOptions()
+    {
+        FetchOptions =
+        {
+            Depth = 1,  // In version LibGit2Sharp@0.32.0, does not support Depth when using SSH.
+            CredentialsProvider = credentialProvider,
+            CertificateCheck = certificateChecker,
+        }
+    };
+    var clonePath = Repository.Clone(repoUri.AbsoluteUri, tempDir.Info.FullName, cloneOptions);
+    var repository = new Repository(clonePath);
+
+    // init branch
+    Console.WriteLine($"Init branch");
+    var branchName = $"test/{DateTime.Now:yyyyMMdd-HHmmss}";
+    if (repository.Head.Tip == null)
+    {
+        // no commits. add unborn HEAD
+        repository.Refs.Add("HEAD", $"refs/heads/{branchName}", allowOverwrite: true);
+    }
+    else
+    {
+        // create branch, checkout
+        var branch = repository.CreateBranch(branchName);
+        var checkoutOptions = new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force, };
+        Commands.Checkout(repository, branch, checkoutOptions);
+    }
+
+    // create dummy contents
+    Console.WriteLine($"Create dummy date");
+    var repoDir = repository.Info.WorkingDirectory.AsDirectoryInfo();
+    repoDir.RelativeFile("a.txt").WriteAllText($"Time: {DateTime.Now}");
+
+    // stage files
+    Console.WriteLine($"Stage files");
+    Commands.Stage(repository, "*");
+
+    // commit files
+    Console.WriteLine($"Commit files");
+    var author = new Signature("tester", "tester@example.com", DateTimeOffset.Now);
+    var commit = repository.Commit($"test: {branchName}", author, author);
+
+    // push to remote
+    Console.WriteLine($"Push");
+    var remote = repository.Network.Remotes.First();
+    var refSpec = $"refs/heads/{branchName}:refs/heads/{branchName}";
+    var pushOptions = new PushOptions
+    {
+        OnPushStatusError = (errors) => throw new Exception($"{errors.Reference}: {errors.Message}"),
+        CredentialsProvider = credentialProvider,
+        CertificateCheck = certificateChecker,
+    };
+    repository.Network.Push(remote, refSpec, pushOptions);
+
+    Console.WriteLine($"Completed");
+});

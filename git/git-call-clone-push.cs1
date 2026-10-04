@@ -1,0 +1,45 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.147.0
+using Lestaly;
+using Lestaly.Cx;
+
+return await Paved.ProceedAsync(async () =>
+{
+    // temporary directory
+    using var tempDir = new TempDir();
+    var workDir = tempDir.Info;
+
+    // clone source
+    var repoUri = new Uri("ssh://git@forgejo.toras.home:2022/toras9000/test-repo.git");
+
+    // clone repository
+    Console.WriteLine($"Clone repository");
+    await "git".args("-C", workDir, "clone", repoUri, ".").silent().result().success();
+
+    // branch init
+    Console.WriteLine($"Init branch");
+    var branchName = $"test/{DateTime.Now:yyyyMMdd-HHmmss}";
+    await "git".args("-C", workDir, "switch", "-c", branchName).silent().result().success();
+
+    // create dummy contents
+    Console.WriteLine($"Create dummy date");
+    workDir.RelativeFile("a.txt").WriteAllText($"Time: {DateTime.Now}");
+
+    // stage files
+    Console.WriteLine($"Stage files");
+    await "git".args("-C", workDir, "add", ".").silent().result().success();
+
+    // commit files
+    Console.WriteLine($"Commit files");
+    await "git".args("-C", workDir, "commit", "-m", $"test: {branchName}").silent().result().success();
+
+    // push to remote
+    Console.WriteLine($"Push");
+    var remotes = await "git".args("-C", workDir, "remote").silent().result().success().output();
+    var remote = (await "git".args("-C", workDir, "remote").silent().result().success().output()).TakeLine(trim: true).ToString();
+    if (remote.IsWhite()) throw new Exception("Cannot get remote");
+    var refSpec = $"refs/heads/{branchName}:refs/heads/{branchName}";
+    await "git".args("-C", workDir, "push", remote, refSpec).silent().result().success();
+
+    Console.WriteLine($"Completed");
+});
