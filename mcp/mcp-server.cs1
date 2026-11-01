@@ -1,0 +1,64 @@
+#!/usr/bin/env -S dotnet run --file 
+#:sdk Microsoft.NET.Sdk.Web
+#:package ModelContextProtocol.AspNetCore@2.3.1
+#:property PublishAot=false
+using System.ComponentModel;
+using Microsoft.Extensions.AI;
+using ModelContextProtocol.Protocol;
+using ModelContextProtocol.Server;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services
+    .AddMcpServer()
+    .WithHttpTransport(options => options.Stateless = true)
+    .WithToolsFromAssembly()
+    .WithResourcesFromAssembly()
+    .WithPromptsFromAssembly();
+
+var app = builder.Build();
+app.MapMcp();
+
+await app.RunAsync("http://localhost:3118");
+
+[McpServerToolType]
+public class EchoTool
+{
+    [McpServerTool(UseStructuredContent = true)]
+    [Description("Echoes the message back to the client.")]
+    public static string EchoGreeting(string message) => $"hello {message}";
+
+    [McpServerTool]
+    [Description("Echoes the repeated message back to the client.")]
+    public static string EchoRepeat(string message, int count) => string.Join("\n", Enumerable.Repeat(message, count));
+}
+
+[McpServerResourceType]
+public class SampleResources
+{
+    [McpServerResource(UriTemplate = "notes://sample-text1", Name = "Sample Text1")]
+    [Description("Return sample text1")]
+    public static TextResourceContents GetText1()
+    {
+        return new TextResourceContents
+        {
+            Uri = $"notes://sample-text",
+            MimeType = "text/markdown",
+            Text = $"# Sample Text\n\nMCP Resource type"
+        };
+    }
+
+    [McpServerResource(UriTemplate = "notes://sample-text2", Name = "Sample Text2")]
+    [Description("Return sample text2")]
+    public static string GetText2()
+    {
+        return $"# Sample Text2";
+    }
+}
+
+[McpServerPromptType]
+public class SamplePrompts
+{
+    [McpServerPrompt, Description("A simple greeting prompt")]
+    public static ChatMessage Greeting()
+        => new(ChatRole.User, "Hello! How can you help me today?");
+}

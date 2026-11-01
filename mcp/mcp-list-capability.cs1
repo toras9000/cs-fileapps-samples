@@ -1,0 +1,63 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Lestaly.General@0.147.0
+#:package ModelContextProtocol.Core@2.3.1
+using Lestaly;
+using ModelContextProtocol.Client;
+
+return await Paved.ProceedAsync(async () =>
+{
+    const string DefaultServer = "http://localhost:3118";
+    Console.WriteLine($"Enter MCP Server (default: {DefaultServer})");
+    Console.Write(">");
+    var input = Console.ReadLine().OmitWhite() ?? DefaultServer;
+
+    Console.WriteLine($"Connect to {input} ...");
+    var transport = new HttpClientTransport(new HttpClientTransportOptions
+    {
+        Endpoint = new(input),
+    });
+    await using var client = await McpClient.CreateAsync(transport);
+
+    if (client.ServerCapabilities.Tools == null)
+    {
+        Console.WriteLine($"No tools");
+    }
+    else
+    {
+        Console.WriteLine($"Tool List");
+        var tools = await client.ListToolsAsync();
+        foreach (var tool in tools)
+        {
+            Console.WriteLine($".. Name={tool.Name}, Description={tool.Description.EllipsisByLength(50)}");
+        }
+    }
+
+    if (client.ServerCapabilities.Resources == null)
+    {
+        Console.WriteLine($"No resources");
+    }
+    else
+    {
+        Console.WriteLine($"Resource List");
+        var resources = await client.ListResourcesAsync();
+        foreach (var res in resources)
+        {
+            Console.WriteLine($".. Name={res.Name}, Uri={res.Uri}");
+        }
+    }
+
+    if (client.ServerCapabilities.Prompts == null)
+    {
+        Console.WriteLine($"No prompts");
+    }
+    else
+    {
+        Console.WriteLine($"Resource List");
+        var prompts = await client.ListPromptsAsync();
+        foreach (var prompt in prompts)
+        {
+            Console.WriteLine($".. Name={prompt.Name}, Description={prompt.Description?.EllipsisByLength(50)}");
+        }
+    }
+
+});

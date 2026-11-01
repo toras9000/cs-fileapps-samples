@@ -1,0 +1,107 @@
+#!/usr/bin/env -S dotnet run --file 
+#:package Spectre.Console@0.57.2
+#:package Spectre.Console.Json@0.57.2
+#:package Lestaly.General@0.147.0
+#:package ModelContextProtocol.Core@2.3.1
+#:property PublishAot=false
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Lestaly;
+using ModelContextProtocol;
+using ModelContextProtocol.Client;
+using Spectre.Console;
+using Spectre.Console.Json;
+
+return await Paved.ProceedAsync(async () =>
+{
+    const string DefaultServer = "http://localhost:3118";
+    var context = await createContextAsync(DefaultServer);
+
+    var toolSelection = new SelectionPrompt<McpClientTool>()
+        .Title("Select tool")
+        .AddChoices(context.Tools)
+        .UseConverter(t => t.Name)
+        ;
+
+    while (true)
+    {
+        AnsiConsole.WriteLine();
+        var tool = await AnsiConsole.PromptAsync(toolSelection);
+
+        AnsiConsole.MarkupLineInterpolated($"Tool: [DarkOrange][bold]{tool.Name}[/][/]");
+        AnsiConsole.Write(new Panel(new JsonText(context.ToJsonString(tool.JsonSchema))).Header("Schema"));
+        if (tool.ReturnJsonSchema is { } returnSchema)
+        {
+            AnsiConsole.Write(new Panel(new JsonText(context.ToJsonString(returnSchema))).Header("Return schema"));
+        }
+    }
+});
+
+async ValueTask<InspectContext> createContextAsync(string defaultServer)
+{
+    while (true)
+    {
+        var input = AnsiConsole.Ask("Enter MCP Server", defaultServer);
+
+        Console.WriteLine($"Connect to {input} ...");
+        var client = default(McpClient);
+        try
+        {
+            var transport = new HttpClientTransport(new HttpClientTransportOptions { Endpoint = new(input), });
+            client = await McpClient.CreateAsync(transport);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLineInterpolated($"[red]Connection error: {ex.Message}[/]");
+            AnsiConsole.WriteLine();
+            continue;
+        }
+
+        try
+        {
+            var tools = await client.ListToolsAsync();
+            if (tools.Count <= 0)
+            {
+                Console.WriteLine($"No tools");
+                AnsiConsole.WriteLine();
+                await client.DisposeAsync();
+                continue;
+            }
+
+            return new InspectContext(client, tools);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLineInterpolated($"[red]List error: {ex.Message}[/]");
+            AnsiConsole.WriteLine();
+            await client.DisposeAsync();
+            continue;
+        }
+    }
+}
+
+class InspectContext
+{
+    public InspectContext(McpClient client, IList<McpClientTool> tools)
+    {
+        this.Client = client;
+        this.Tools = tools;
+
+        this.JsonOptions = new JsonSerializerOptions();
+        this.JsonOptions.ReadCommentHandling = JsonCommentHandling.Skip;
+        this.JsonOptions.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        this.JsonOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        this.JsonOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals;
+        this.JsonOptions.PropertyNameCaseInsensitive = true;
+        this.JsonOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+        this.JsonOptions.MakeReadOnly();
+    }
+
+    public McpClient Client { get; }
+    public IList<McpClientTool> Tools { get; }
+    public JsonSerializerOptions JsonOptions { get; }
+
+    public string ToJsonString<T>(T value) => JsonSerializer.Serialize(value, this.JsonOptions);
+}
