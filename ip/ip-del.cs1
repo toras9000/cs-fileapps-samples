@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:property TargetFramework=net10.0-windows7.0
 #:package Spectre.Console@0.57.2
-#:package NebriaChip.Ip.Win@1.1.0
+#:package NebriaChip.Ip.Win@1.1.1
 #:package Lestaly.General@0.147.0
 using System.Net;
 using System.Net.NetworkInformation;
