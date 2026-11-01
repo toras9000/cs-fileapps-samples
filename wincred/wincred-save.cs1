@@ -1,0 +1,33 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.147.0
+#:package NebriaChip.Vault.Win@1.1.0
+#:property TargetFramework=net10.0-windows7.0
+using System.Text.Json.Serialization;
+using Lestaly;
+using NebriaChip.Vault.Win;
+
+return await Paved.ProceedAsync(async () =>
+{
+    var credName = "SampleScript-TestCred";
+
+    var adapter = new PersistVaultAdapter();
+    var secret = adapter.ReadGenericObject(credName, JsonContext.Default.SecretData);
+    if (secret == null)
+    {
+        Console.WriteLine($"Creating new credential");
+    }
+    else
+    {
+        Console.WriteLine($"Already exists: User={secret.User}, Paltform={secret.Platform}, Timestamp={secret.Time}");
+        Console.WriteLine($"Updating existing credential");
+    }
+
+    var newSecret = new SecretData(Environment.UserName, Environment.Version, DateTime.Now);
+    adapter.WriteGenericObject(credName, newSecret, JsonContext.Default.SecretData);
+    Console.WriteLine($"Save finished");
+});
+
+record SecretData(string User, Version Platform, DateTime Time);
+
+[JsonSerializable(typeof(SecretData[]))]
+internal partial class JsonContext : JsonSerializerContext;
