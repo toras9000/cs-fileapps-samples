@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Lestaly.General@0.147.0
 #:package NebriaChip.Vault.Win@1.1.0
-#:property TargetFramework=net10.0-windows7.0
+#:property TargetFramework=net11.0-windows7.0
 using System.Text.Json.Serialization;
 using Lestaly;
 using NebriaChip.Vault.Win;

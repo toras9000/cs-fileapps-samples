@@ -1,14 +1,13 @@
 #!/usr/bin/env -S dotnet run --file
-#:package System.DirectoryServices@10.0.14
-#:package System.DirectoryServices.Protocols@10.0.14
+#:package System.DirectoryServices@11.0.0
+#:package System.DirectoryServices.Protocols@11.0.0
 #:package Lestaly.General@0.147.0
 #:package Kokuban@0.2.0
-#:package RefFile@0.2.0
+#:include .text-helper.cs
 using System.DirectoryServices.Protocols;
 using System.Net;
 using Kokuban;
 using Lestaly;
-[assembly: RefFile(".text-helper.cs1")]
 
 var settings = new
 {

@@ -2,7 +2,7 @@
 #:package Spectre.Console@0.57.2
 #:package Spectre.Console.Json@0.57.2
 #:package Lestaly.General@0.147.0
-#:package ModelContextProtocol.Core@2.3.1
+#:package ModelContextProtocol.Core@2.4.0
 #:property PublishAot=false
 using System.Text.Encodings.Web;
 using System.Text.Json;

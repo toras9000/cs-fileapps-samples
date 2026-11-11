@@ -2,15 +2,13 @@
 #:package Lestaly.General@0.147.0
 #:package StreamJsonRpc@2.26.150+RR
 #:package Kokuban@0.2.0
-#:package RefFile@0.2.0
 #:property PublishAot=false
+#:include .rpc-contract.cs
+#:include .rpc-helper.cs
 using System.Net;
 using System.Net.Sockets;
 using Lestaly;
-using static Helper;
 using StreamJsonRpc;
-[assembly: RefFile(".rpc-contract.cs1")]
-[assembly: RefFile(".rpc-helper.cs1")]
 
 var settings = new
 {
@@ -33,6 +31,6 @@ return await Paved.ProceedAsync(async () =>
     using var service = JsonRpc.Attach<IMemoryService>(stream);
 
     Console.WriteLine($"Enter remote op");
-    await InterpretCommandsAsync(service, signal.Token);
+    await Helper.InterpretCommandsAsync(service, signal.Token);
 
 });

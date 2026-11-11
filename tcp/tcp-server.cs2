@@ -1,12 +1,11 @@
 #!/usr/bin/env -S dotnet run --file
 #:package Kokuban@0.2.0
 #:package Lestaly.General@0.147.0
-#:package RefFile@0.2.0
+#:include .console-utils.cs
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Lestaly;
-[assembly: RefFile(".console-utils.cs1")]
 
 var settings = new
 {

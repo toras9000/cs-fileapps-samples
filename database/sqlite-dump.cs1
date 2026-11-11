@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package Lestaly.General@0.147.0
-#:package Microsoft.EntityFrameworkCore.Sqlite@10.0.14
+#:package Microsoft.EntityFrameworkCore.Sqlite@11.0.0
 #:package Kokuban@0.2.0
 using Microsoft.Data.Sqlite;
 using Kokuban;

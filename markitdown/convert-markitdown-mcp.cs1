@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package Microsoft.Extensions.DataIngestion.MarkItDown@10.11.0-preview.1.26513.7
+#:package Microsoft.Extensions.DataIngestion.MarkItDown@11.0.0-preview.1.26560.3
 #:package Kokuban@0.2.0
 #:package Lestaly.General@0.147.0
 #:property PublishAot=false
