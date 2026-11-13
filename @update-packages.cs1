@@ -26,6 +26,12 @@ var settings = new
         ".cs2",
     },
 
+    // Exclude directories
+    ExcludeDirs = new Func<DirectoryInfo, bool>(dir => dir.Name.EqualsAnyIgnoreCase(["obj", "bin"])),
+
+    // Exclude files
+    ExcludeFiles = new Func<FileInfo, bool>(file => file.Name.EndsWithAnyIgnoreCase(["g.cs"])),
+
     // Version of the package to pin
     FixedVersions = new PackageIdentity[]
     {
@@ -58,15 +64,9 @@ return await Paved.ProceedAsync(async () =>
     // Detection regular expression for package reference directives
     var detector = new Regex(@"^#:package\s+(?<package>[a-zA-Z0-9_\-\.]+)\s*@\s*(?<version>.+)\s*");
 
-    // Target extensions
-    var targetExts = settings.TargetExtensions.Select(e => e.EnsureStarts(".")).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
     // Search for scripts under the target directory
-    foreach (var file in settings.TargetDir.EnumerateFiles("*", SearchOption.AllDirectories))
+    foreach (var file in settings.TargetDir.ScanFiles(settings.TargetExtensions, settings.ExcludeFiles, settings.ExcludeDirs, recurse: true))
     {
-        // Extension filter
-        if (!targetExts.Contains(file.Extension)) continue;
-
         Console.WriteLine($"File: {file.RelativePathFrom(settings.TargetDir)}");
 
         // Read file contents
