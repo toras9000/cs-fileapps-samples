@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file 
 #:package LibGit2Sharp@0.32.0
-#:package Lestaly.General@0.147.0
+#:package Lestaly.General@0.148.0
 using Lestaly;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;

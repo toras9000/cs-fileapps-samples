@@ -2,7 +2,7 @@
 #:property TargetFramework=net11.0-windows7.0
 #:package Spectre.Console@0.57.2
 #:package NebriaChip.Ip.Win@1.1.1
-#:package Lestaly.General@0.147.0
+#:package Lestaly.General@0.148.0
 using System.Net;
 using System.Net.NetworkInformation;
 using Lestaly;

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
 #:package System.DirectoryServices@11.0.0
 #:package System.DirectoryServices.Protocols@11.0.0
-#:package Lestaly.General@0.147.0
+#:package Lestaly.General@0.148.0
 using System.DirectoryServices.Protocols;
 using System.Text;
 using System.Text.RegularExpressions;
